@@ -90,8 +90,6 @@ if ($built -and $built.FullName -ne $OutExe) {
 
 # Result
 if (Test-Path $OutExe) {
-    & node (Join-Path $PSScriptRoot "sign-installers.mjs") windows $OutExe
-    if ($LASTEXITCODE -ne 0) { throw "Windows installer signing failed." }
     $verificationFile = Join-Path $OutDir "installer-verification.json"
     $verificationProcess = Start-Process -FilePath $OutExe `
         -ArgumentList @('--verify-bundle', '--report', ('"' + $verificationFile + '"')) `

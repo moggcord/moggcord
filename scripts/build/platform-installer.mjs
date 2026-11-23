@@ -4,7 +4,6 @@
  */
 
 import { build } from "esbuild";
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -26,14 +25,9 @@ const response = await fetch(`https://github.com/${upstream.repository}/releases
 if (!response.ok) throw new Error(`The upstream installer could not be downloaded (${response.status}).`);
 const bytes = Buffer.from(await response.arrayBuffer());
 if (createHash("sha256").update(bytes).digest("hex") !== upstream[platform].sha256) throw new Error("The upstream installer fingerprint has changed. Packaging was stopped.");
-const helper = join(resources, "equilotl");
-await writeFile(helper, bytes);
-await chmod(helper, 0o755);
-if (platform === "darwin" && process.env.MOGGCORD_MAC_SIGNING === "true") {
-    execFileSync(process.execPath, [join(root, "scripts", "build", "sign-installers.mjs"), "mac-helper", helper], { stdio: "inherit" });
-}
-const installerSha256 = createHash("sha256").update(await readFile(helper)).digest("hex");
-await writeFile(join(resources, "metadata.json"), JSON.stringify({ version: pkg.version, platform, installerSha256 }));
+await writeFile(join(resources, "equilotl"), bytes);
+await chmod(join(resources, "equilotl"), 0o755);
+await writeFile(join(resources, "metadata.json"), JSON.stringify({ version: pkg.version, platform, installerSha256: upstream[platform].sha256 }));
 await copyFile(join(root, "installer-src", "default-settings.json"), join(resources, "default-settings.json"));
 await writeFile(join(destination, "package.json"), JSON.stringify({ name: "moggcord-platform-installer", productName: "Moggcord Installer", version: pkg.version, description: "Install, repair and uninstall Moggcord in Discord Desktop.", main: "main.cjs", homepage: pkg.homepage, repository: pkg.repository, author: "Moggcord contributors", license: "GPL-3.0-or-later" }, null, 2));
 await build({ entryPoints: [join(root, "installer-desktop", "main.cjs")], outfile: join(destination, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", external: ["electron", "original-fs"],
