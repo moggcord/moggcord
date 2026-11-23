@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/moggcord-header.webp" width="900" alt="">
-  <h1>Moggcord Desktop</h1>
+  <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/moggcord-avatar.png" width="72" height="72" alt="">
+  <h1>Moggcord™ Desktop</h1>
   <p>Customize Discord with plugins, themes and QuickCSS on Windows, macOS and Linux.</p>
   <p>
     <a href="https://github.com/moggcord/moggcord/releases/latest"><strong>Download</strong></a> ·
@@ -13,11 +13,14 @@
 
 ## Download and install
 
-| Platform | Installer | Setup |
-| --- | --- | --- |
-| Windows x64 | [EXE installer](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer.exe) | [Windows guide](docs/getting-started/windows.md) |
-| macOS · Intel and Apple Silicon | [DMG installer](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-macOS.dmg) · Preview | [macOS guide](docs/getting-started/macos.md) |
-| Linux x64 | [AppImage](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-Linux.AppImage) · [DEB](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-Linux.deb) · Preview | [Linux guide](docs/getting-started/linux.md) |
+| Platform | Package | Download size | Guide |
+| --- | --- | ---: | --- |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/windows.svg" width="20" height="20" alt=""> **Windows x64** | [EXE](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer.exe) | 117.8 MiB | [Setup](docs/getting-started/windows.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/apple.svg" width="20" height="20" alt=""> **macOS · Intel / Apple Silicon** | [DMG](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-macOS.dmg) | 230.0 MiB | [Setup](docs/getting-started/macos.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [AppImage](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-Linux.AppImage) | 141.0 MiB | [Setup](docs/getting-started/linux.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [DEB](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-Linux.deb) | 108.1 MiB | [Setup](docs/getting-started/linux.md) |
+
+macOS and Linux installers are previews. Download sizes refer to the linked packages. Installed storage varies with the Discord installation.
 
 1. Install Discord and download the matching Moggcord installer.
 2. Open the installer, select the Discord channel you use (**Stable**, **PTB**, or **Canary**) and choose **Install Moggcord**.
