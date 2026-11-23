@@ -1376,10 +1376,13 @@ namespace MoggcordInstaller
         {
             try {
                 var appDirectory = Path.GetDirectoryName(resPath);
-                var exe = Path.GetFullPath(Path.Combine(appDirectory, "..", "Update.exe"));
+                var root = Path.GetDirectoryName(appDirectory);
                 var procName = GetDiscordProcessName(resPath) + ".exe";
-                if (File.Exists(exe)) Process.Start(exe, $"--processStart {procName}");
-                else Process.Start(new ProcessStartInfo(Path.Combine(appDirectory, procName)) { UseShellExecute = true });
+                var launcher = Path.GetFileName(appDirectory).StartsWith("app-")
+                    ? new[] { Path.Combine(root, procName), Path.Combine(root, "Update.exe") }.FirstOrDefault(File.Exists)
+                    : null;
+                if (launcher != null) Process.Start(new ProcessStartInfo(launcher, $"--processStart {procName}") { WorkingDirectory = root });
+                else Process.Start(new ProcessStartInfo(Path.Combine(appDirectory, procName)) { UseShellExecute = true, WorkingDirectory = appDirectory });
             } catch { }
         }
 
