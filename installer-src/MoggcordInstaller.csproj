@@ -11,7 +11,7 @@
     <Nullable>disable</Nullable>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.18.65</Version>
+    <Version>1.18.66</Version>
     
     <!-- Single File configuration -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -38,8 +38,8 @@
     <EmbeddedResource Include="moggcord-pfp.png" />
     <EmbeddedResource Include="discord-icon.png" />
     <EmbeddedResource Include="discord-canary-icon.png" />
-    <EmbeddedResource Include="fonts/InterVariable.woff2" />
-    <EmbeddedResource Include="fonts/Inter.LICENSE.txt" />
+    <EmbeddedResource Include="fonts/GeistVariable.woff2" />
+    <EmbeddedResource Include="fonts/Geist.LICENSE.txt" />
   </ItemGroup>
 
 </Project>

@@ -5,213 +5,324 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Moggcord Installer</title>
   <style>
-    @font-face { font-family: Inter; src: url('data:font/woff2;base64,{{FONT_BASE64}}') format('woff2'); font-style: normal; font-weight: 100 900; font-display: swap; }
-    :root { color-scheme: dark; font-family: Inter, 'Segoe UI Variable', 'Segoe UI', sans-serif; --bg: #101012; --surface: #19191c; --text: #f2f2f5; --muted: #b0b0ba; --line: #ffffff1c; --control-radius: 12px; --control-ease: cubic-bezier(.23, 1, .32, 1); --discord-logo: url('data:image/png;base64,{{DISCORD_BASE64}}'); --canary-logo: url('data:image/png;base64,{{CANARY_BASE64}}'); }
+    @font-face { font-family: Geist; src: url('data:font/woff2;base64,{{FONT_BASE64}}') format('woff2'); font-style: normal; font-weight: 100 900; font-display: swap; }
+    :root {
+      color-scheme: dark;
+      font-family: Geist, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      --bg: #090b13; --bg-deep: #04050a; --surface: #101521; --line: #c7cfff1d; --card-line: #a1b4ee21;
+      --text: #f5f6ff; --muted: #a8afc3; --faint: #6f7895; --accent: #a9bcff; --hot: #f28bb7; --green: #61dca3; --red: #ff6b81; --amber: #f4c356;
+      --ease: cubic-bezier(.22, 1, .36, 1); --control-ease: cubic-bezier(.23, 1, .32, 1);
+      --discord-logo: url('data:image/png;base64,{{DISCORD_BASE64}}'); --canary-logo: url('data:image/png;base64,{{CANARY_BASE64}}');
+    }
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-size: 13px; -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; }
+    body { margin: 0; overflow: hidden; background: var(--bg-deep); color: var(--text); font-size: 13px; -webkit-font-smoothing: antialiased; }
+    ::selection { background: #83a3ff57; }
     button, input { font: inherit; }
     button { cursor: pointer; color: inherit; -webkit-app-region: no-drag; }
-    button:disabled { cursor: default; opacity: .42; }
-    button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #aab6ff; outline-offset: 4px; }
-    .button { position: relative; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 1px solid transparent; border-radius: var(--control-radius); background: transparent; color: var(--text); box-shadow: none; font-size: 13px; font-weight: 550; line-height: 1.3; white-space: nowrap; user-select: none; touch-action: manipulation; transition: background-color 180ms var(--control-ease), border-color 180ms var(--control-ease), color 180ms var(--control-ease), opacity 180ms var(--control-ease), transform 180ms var(--control-ease); }
-    .button:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px #aab6ffb3; }
-    .button:disabled { pointer-events: none; opacity: .45; }
-    .button:active:enabled { transform: scale(.97); transition-duration: 100ms; }
-    .button svg { width: 16px; height: 16px; pointer-events: none; }
-    .button[data-size="sm"] { min-height: 34px; gap: 6px; padding: 0 12px; font-size: 11px; }
-    .button[data-variant="primary"] { border-color: #e0e3f4; background: #dce1f8; color: #171923; }
-    .button[data-variant="primary"]:hover:enabled { background: #edf0fc; }
-    .button[data-variant="primary"]:active:enabled { background: #c7ceee; }
-    .button[data-variant="secondary"] { border-color: #ffffff26; background: #28282e; color: var(--text); }
-    .button[data-variant="secondary"]:hover:enabled { border-color: #ffffff3d; background: #323238; }
-    .button[data-variant="secondary"]:active:enabled { background: #38383f; }
-    .button[data-variant="outline"] { border-color: #b1b8e640; color: #dce2fb; }
-    .button[data-variant="outline"]:hover:enabled { border-color: #b1b8e666; background: #b3bff00a; }
-    .button[data-variant="outline"]:active:enabled { border-color: #b1b8e680; background: #b3bff014; }
-    .button[data-variant="ghost"] { color: #a5afce; }
-    .button[data-variant="ghost"]:hover:enabled { border-color: #b3bff01a; background: #b3bff00a; color: #edf0ff; }
-    .button[data-variant="ghost"]:active:enabled { border-color: #b3bff024; background: #b3bff014; }
-    .button[data-variant="destructive"] { border-color: #ce718c; background: #b44365; color: #fff6f8; }
-    .button[data-variant="destructive"]:hover:enabled { border-color: #bd607a; background: #9f3b59; }
-    .button[data-variant="destructive"]:active:enabled { background: #8c334e; }
-    .button[data-variant="link"] { min-height: 28px; padding: 0; color: #b8c2e5; font-size: 11px; }
-    .button[data-variant="link"]:hover:enabled { color: #e0e6ff; text-decoration: underline; text-underline-offset: 4px; }
-    .button[data-variant="link"]:active:enabled { transform: none; }
-    .button-icon { display: inline-flex; flex-shrink: 0; transform-origin: center; transition: transform 160ms var(--control-ease); }
-    .button[aria-busy="true"]::before { content: ''; width: 14px; height: 14px; flex-shrink: 0; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: .8; animation: spin 700ms linear infinite; }
-    svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    .shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; border: 1px solid var(--line); background: var(--bg); }
-    .titlebar, footer { display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding-inline: 24px; background: #151517; }
-    .titlebar { padding-right: 10px; border-bottom: 1px solid var(--line); user-select: none; }
-    .brand { display: flex; align-items: baseline; gap: 10px; font-size: 16px; font-weight: 760; letter-spacing: -.04em; }
-    .brand span { padding-left: 10px; border-left: 1px solid var(--line); color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0; line-height: 1; }
+    button:disabled { cursor: default; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #bccaff; outline-offset: 4px; }
+    svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    .shell { position: relative; isolation: isolate; display: flex; flex-direction: column; height: 100vh; overflow: hidden; overflow: clip; border: 1px solid #ffffff14; background: radial-gradient(ellipse 70% 45% at 50% 0%, #1a1f3d 0%, transparent 70%), var(--bg-deep); }
+    .dome { position: absolute; z-index: -3; top: 104px; left: 50%; width: 1720px; height: 1720px; margin-left: -860px; border-radius: 50%; background: radial-gradient(circle at 50% 0%, #161b31 0%, #0d1120 16%, var(--bg) 34%); box-shadow: 0 -1px 0 #c9d3ff2e, 0 -40px 120px #3d4fae2b; pointer-events: none; transition: transform 900ms var(--ease); }
+    #scene { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; transition: opacity 900ms var(--ease); }
+    #scene.is-rendering { opacity: 1; }
+    .shell::before { position: absolute; z-index: -1; inset: 0; content: ''; pointer-events: none; opacity: .055; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    .shell::after { position: absolute; z-index: -1; inset: 0; content: ''; pointer-events: none; background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -400px), #8ea4ff14, transparent 65%); }
+    .shell[data-page="target-page"] .dome, .shell[data-page="progress-page"] .dome, .shell[data-page="installer-update-page"] .dome { transform: translateY(-46px); }
+    .shell[data-page="target-page"] #scene.is-rendering { opacity: .5; }
+    .shell[data-page="progress-page"] #scene.is-rendering, .shell[data-page="installer-update-page"] #scene.is-rendering { opacity: .7; }
+
+    .titlebar { position: relative; z-index: 5; flex-shrink: 0; padding: 10px 12px 0; user-select: none; }
+    .nav-pill { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 6px 0 18px; border: 1px solid #abbaff26; border-radius: 999px; background: #0d1220b8; box-shadow: 0 14px 40px #02040b8c, inset 0 1px #d3ddff12; backdrop-filter: blur(14px); animation: drop-in 900ms var(--ease) both; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 780; letter-spacing: -.045em; }
+    .brand span { padding: 3px 9px; border: 1px solid #abbaff2e; border-radius: 999px; background: #a9bcff12; color: #c9d3f2; font-size: 10.5px; font-weight: 600; letter-spacing: .01em; }
     .window-actions { display: flex; gap: 2px; }
-    .window-actions button { display: grid; place-items: center; width: 36px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); transition: background-color 150ms ease; }
-    .window-actions button:hover { background: #ffffff12; color: white; }
-    .window-actions #close:hover { background: #b6425f33; color: #ffc3d0; }
-    .window-actions svg { width: 17px; height: 17px; }
-    main { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #3e405b transparent; }
-    .page { padding: 46px 48px 32px; animation: arrive 260ms ease both; }
-    h1 { margin: 0; font-size: 43px; line-height: 1.13; font-weight: 650; letter-spacing: -2px; white-space: pre-line; }
-    .intro { max-width: 510px; margin: 17px 0 0; color: var(--muted); font-size: 13px; line-height: 1.85; }
-    #home-page { min-height: 100%; padding: 0 42px 32px; animation: none; }
-    .hero { position: relative; display: grid; justify-items: center; align-content: center; min-height: 308px; padding: 64px 12px 36px; text-align: center; isolation: isolate; }
-    .hero::before { position: absolute; z-index: -1; inset: 0 -42px; content: ''; background: radial-gradient(ellipse at 50% -75%, #5c5c66 0%, #313137 29%, #18181b 64%, transparent 74%), radial-gradient(ellipse at 50% -68%, transparent 68%, #d3d3eb30 68.3%, transparent 69%); pointer-events: none; animation: horizon-in 1400ms var(--control-ease) both; }
-    @keyframes horizon-in { from { opacity: .34; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    .hero img { width: 74px; height: 68px; margin-bottom: 18px; object-fit: contain; }
-    .hero h1 { font-size: 50px; letter-spacing: -.04em; }
-    .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 660px; margin: 0 auto; padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
-    .actions .button { min-height: 46px; padding-inline: 12px; }
-    .actions [data-action="uninstall"] { border-color: #d67d8c50; color: #efafbb; }
-    .actions [data-action="uninstall"]:hover:enabled { background: #d67d8c13; border-color: #d67d8c89; }
-    footer { border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
-    .build-info { display: flex; align-items: center; gap: 12px; }
-    #installer-version { color: var(--text); font-variant-numeric: tabular-nums; }
-    .build-platform { padding-left: 12px; border-left: 1px solid var(--line); }
-    #github { color: var(--text); }
-    #github svg { width: 12px; height: 12px; color: var(--muted); }
-    .back { margin: -13px 0 26px -12px; }
-    .back svg { width: 15px; height: 15px; }
-    .target-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 40px; }
-    .target-layout h1 { font-size: 33px; letter-spacing: -1.4px; }
-    .target-layout .intro { font-size: 13px; }
-    .targets-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
-    .targets-header h2 { margin: 0; font-size: 12px; font-weight: 550; }
+    .window-actions button { display: grid; place-items: center; width: 34px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); transition: background-color 150ms, color 150ms; }
+    .window-actions button:hover { background: #ffffff12; color: #fff; }
+    .window-actions #close:hover { background: #ff6b8133; color: #ffd0d8; }
+    .window-actions svg { width: 16px; height: 16px; }
+
+    main { position: relative; z-index: 2; flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #3e405b transparent; }
+    .page { min-height: 100%; padding: 34px 48px 30px; }
+    h1 { margin: 0; font-size: 42px; line-height: 1.06; font-weight: 760; letter-spacing: -.055em; white-space: pre-line; }
+    h1:focus { outline: none; }
+    .intro { max-width: 420px; margin: 14px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.7; }
+    .rise { animation: rise 900ms var(--ease) both; animation-delay: calc(var(--i, 0) * 85ms + 60ms); }
+
+    .button { position: relative; isolation: isolate; display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 9px; min-height: 40px; padding: 0 18px; overflow: hidden; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.3; white-space: nowrap; user-select: none; touch-action: manipulation; transition: background-color 180ms var(--control-ease), border-color 180ms var(--control-ease), color 180ms, box-shadow 220ms var(--control-ease), opacity 180ms, transform 180ms var(--control-ease); }
+    .button:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px #bccaffb3; }
+    .button:disabled { pointer-events: none; opacity: .4; filter: saturate(.6); }
+    .button:active:enabled { transform: scale(.97); transition-duration: 90ms; }
+    .button svg { width: 16px; height: 16px; pointer-events: none; }
+    .button[data-size="lg"] { min-height: 48px; padding: 0 22px; font-size: 14.5px; }
+    .button[data-size="sm"] { min-height: 32px; gap: 6px; padding: 0 12px; font-size: 11.5px; }
+    .button[data-variant="primary"] { border-color: #e1e8ff; background: linear-gradient(120deg, #e6edff, #bcbbfb); color: #15192d; box-shadow: 0 6px 31px #8ea4ff42, inset 0 1px #fff9; }
+    .button[data-variant="primary"]::after { position: absolute; z-index: -1; inset: 0; content: ''; background: linear-gradient(105deg, transparent 30%, #ffffffc4 48%, transparent 66%); transform: translateX(-130%); animation: sheen 4.2s var(--ease) 1.4s infinite; pointer-events: none; }
+    .button[data-variant="primary"]:hover:enabled { border-color: #f4f5ff; background: linear-gradient(120deg, #f1f4ff, #cfcdfd); box-shadow: 0 10px 42px #8ea4ff6b, inset 0 1px #fff; transform: translateY(-1px); }
+    .button[data-variant="secondary"] { border-color: #b7c1f33c; background: #121727d6; color: #e3e8fd; }
+    .button[data-variant="secondary"]:hover:enabled { border-color: #b7c1f385; background: #1d2540; transform: translateY(-1px); }
+    .button[data-variant="outline"] { border-color: #b7c1f340; color: #dce2fb; }
+    .button[data-variant="outline"]:hover:enabled { border-color: #b7c1f380; background: #b3bff00d; }
+    .button[data-variant="ghost"] { color: #aeb7d6; }
+    .button[data-variant="ghost"]:hover:enabled { background: #b3bff012; color: #eef1ff; }
+    .button[data-variant="danger"] { border-color: #ff8aa036; background: #170f17c7; color: #f2b3c0; }
+    .button[data-variant="danger"]:hover:enabled { border-color: #ff8aa070; background: #2a1520; color: #ffd3dc; transform: translateY(-1px); }
+    .button[data-variant="destructive"] { border-color: #ce718c; background: #b44365; color: #fff6f8; }
+    .button[data-variant="link"] { min-height: 28px; padding: 0; overflow: visible; color: #b8c2e5; font-size: 12px; }
+    .button[data-variant="link"]:hover:enabled { color: #e0e6ff; text-decoration: underline; text-underline-offset: 4px; }
+    .button-icon { display: inline-flex; transition: transform 240ms var(--ease); }
+    .button[aria-busy="true"]::before { content: ''; width: 13px; height: 13px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 700ms linear infinite; }
+
+    #home-page { display: flex; flex-direction: column; justify-content: center; padding-top: 18px; }
+    .hero { display: grid; justify-items: center; text-align: center; }
+    .release-pill { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 22px; padding: 4px 13px 4px 4px; border: 1px solid #abbaff33; border-radius: 999px; background: #11162699; color: #c9d3f2; font-size: 12px; font-weight: 550; backdrop-filter: blur(10px); }
+    .release-badge { padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #c9d6ff, #a49de6); color: #0b0e1a; font-size: 10.5px; font-weight: 750; letter-spacing: .02em; }
+    .pill-dot { width: 3px; height: 3px; border-radius: 50%; background: #c9d3f266; }
+    #welcome-title { color: #f5f6ff; font-size: clamp(40px, 6.4vw, 62px); line-height: .99; letter-spacing: -.066em; white-space: normal; }
+    .wordmark { display: flex; align-items: center; justify-content: center; gap: .23em; margin: 0 auto .26em; color: #ced9f5; font-size: .52em; font-style: italic; font-weight: 400; letter-spacing: -.052em; line-height: 1.1; white-space: nowrap; }
+    .wordmark img { width: 1.18em; height: 1.18em; object-fit: contain; filter: drop-shadow(0 0 12px #759aff80); animation: float 5s ease-in-out infinite; }
+    .title-accent { display: inline-block; padding: 0 .08em .11em; background: repeating-linear-gradient(90deg, #8eaff4 0%, #bcd1fc 14%, #e7eeff 24%, #b3bff7 34%, #a29bdd 43%, #8eaff4 50%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px #678eea3d); animation: shimmer 3.2s linear infinite; }
+    .lead { max-width: 40ch; margin: 18px auto 0; color: #b3bcd4; font-size: 15px; line-height: 1.55; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
+    .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: min(100%, 700px); margin: 38px auto 0; padding: 0; list-style: none; }
+    .features li { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 11px; align-items: center; padding: 13px 14px; overflow: hidden; border: 1px solid var(--card-line); border-radius: 16px; background: linear-gradient(180deg, #121828b3, #0d1220b3); backdrop-filter: blur(8px); transition: transform 300ms var(--ease), border-color 300ms; }
+    .features li::after { position: absolute; inset: 0; content: ''; background: radial-gradient(160px circle at 0% 0%, #a9bcff1c, transparent 70%); opacity: 0; transition: opacity 300ms; }
+    .features li:hover { transform: translateY(-3px); border-color: #a9bcff47; }
+    .features li:hover::after { opacity: 1; }
+    .feature-icon { display: grid; grid-row: span 2; place-items: center; width: 34px; height: 34px; border: 1px solid #a9bcff26; border-radius: 11px; background: #a9bcff12; color: #c3cdff; }
+    .feature-icon svg { width: 17px; height: 17px; }
+    .features strong { font-size: 12.5px; font-weight: 650; letter-spacing: -.01em; }
+    .features span:last-child { color: var(--faint); font-size: 11px; }
+
+    .back { margin: -6px 0 22px -10px; }
+    .back svg { width: 15px; height: 15px; transition: transform 200ms var(--ease); }
+    .back:hover svg { transform: translateX(-3px); }
+    .target-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 42px; }
+    .target-layout h1 { font-size: 36px; }
+    .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
+    .side-card { display: grid; gap: 12px; margin-top: 26px; padding: 15px; border: 1px solid var(--card-line); border-radius: 16px; background: #0e1320b3; }
+    .side-card p { display: flex; gap: 10px; margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.55; }
+    .side-card svg { width: 15px; height: 15px; margin-top: 1px; color: var(--accent); }
+    .targets-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .targets-header h2 { margin: 0; font-size: 13px; font-weight: 650; letter-spacing: -.01em; }
     .targets-header svg { width: 13px; height: 13px; }
+    #refresh:hover svg { transform: rotate(180deg); transition: transform 500ms var(--ease); }
     #discord-list { display: grid; gap: 9px; }
-    .discord-card { display: flex; align-items: center; gap: 13px; width: 100%; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; transition: border-color 160ms, background 160ms; }
-    .discord-card:hover { border-color: #aab8ff60; }
-    .discord-card[aria-pressed="true"] { border-color: #a2b3ff96; background: #23232b; }
-    .channel-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border: 1px solid #b5bcff1a; border-radius: 10px; color: #b4bded; background: #878df20b; }
-    .channel-icon.canary { color: #e9cd87; background: #f1c65c08; border-color: #f1c65c20; }
+    .discord-card { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 15px 16px; border: 1px solid var(--card-line); border-radius: 16px; background: linear-gradient(180deg, #131a2bd9, #0e1321d9); text-align: left; animation: card-in 600ms var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform 260ms var(--ease), border-color 200ms, box-shadow 260ms var(--ease); }
+    .discord-card:hover { transform: translateY(-2px); border-color: #a9bcff52; box-shadow: 0 14px 34px #0006; }
+    .discord-card[aria-pressed="true"] { border-color: transparent; background: linear-gradient(#151c30, #121828) padding-box, linear-gradient(120deg, #c9d6ff, #a49de6 55%, #f28bb7) border-box; box-shadow: 0 0 0 4px #a9bcff12, 0 16px 44px #6f86ff2e; }
+    .channel-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border: 1px solid #b5bcff1f; border-radius: 13px; background: #878df214; }
+    .channel-icon.canary { border-color: #f1c65c26; background: #f1c65c0d; }
     .discord-logo { width: 26px; height: 26px; background: var(--discord-logo) center / contain no-repeat; }
     .channel-icon.canary .discord-logo { background-image: var(--canary-logo); }
     .channel-icon img { width: 30px; height: 30px; object-fit: contain; }
-    .target-info { display: grid; gap: 6px; min-width: 0; flex: 1; }
-    .target-name { font-weight: 590; font-size: 12px; letter-spacing: -.1px; }
-    .target-state { color: var(--muted); font-size: 11px; }
-    .target-state.installed { color: #afbfee; }
-    .target-state.other { color: #d9be8d; }
-    .radio { width: 15px; height: 15px; flex-shrink: 0; border: 1px solid #5a617f; border-radius: 50%; }
-    [aria-pressed="true"] .radio { border: 4px solid #b7c2ff; background: #393755; }
-    .manual { margin-top: 14px; padding-inline: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .target-info { display: grid; gap: 5px; min-width: 0; flex: 1; }
+    .target-name { font-size: 13.5px; font-weight: 640; letter-spacing: -.015em; }
+    .target-state { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11.5px; }
+    .target-state::before { width: 6px; height: 6px; border-radius: 50%; content: ''; background: var(--green); box-shadow: 0 0 10px var(--green); }
+    .target-state.installed { color: #c3cdff; }
+    .target-state.installed::before { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .target-state.other { color: #e2c690; }
+    .target-state.other::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+    .radio { position: relative; width: 20px; height: 20px; flex-shrink: 0; border: 1.5px solid #59618a; border-radius: 50%; transition: border-color 200ms; }
+    [aria-pressed="true"] .radio { border-color: transparent; background: linear-gradient(135deg, #e6edff, #a49de6); animation: pop 420ms var(--ease); }
+    [aria-pressed="true"] .radio::after { position: absolute; inset: 0; content: ''; background: #15192d; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 13px no-repeat; }
+    .manual { margin-top: 12px; padding-inline: 15px; border: 1px solid var(--card-line); border-radius: 16px; background: #0e1320b3; }
     .manual[open] { padding-bottom: 14px; }
-    .manual summary { padding-block: 11px; color: var(--text); font-size: 12px; font-weight: 550; cursor: pointer; }
-    .manual summary:focus-visible { outline: 2px solid #aab6ff; border-radius: 4px; }
-    .manual summary::marker { color: var(--muted); }
-    .manual p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .manual summary { padding-block: 12px; color: #d5dcf5; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .manual summary::marker { color: var(--faint); }
+    .manual p { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.55; }
     .manual-row { display: flex; gap: 8px; margin-top: 10px; }
-    input[type="text"] { min-width: 0; flex: 1; padding: 10px; border: 1px solid #ffffff27; border-radius: var(--control-radius); color: var(--text); background: var(--bg); font-size: 11px; }
-    .selection { margin-top: 22px; padding-top: 19px; border-top: 1px solid var(--line); }
-    #selection-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-    #selection-path { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-    .replace-confirm { display: flex; align-items: flex-start; gap: 9px; margin-top: 13px; color: #dbc29d; font-size: 10.5px; line-height: 1.8; }
+    input[type="text"] { min-width: 0; flex: 1; padding: 9px 14px; border: 1px solid #ffffff21; border-radius: 999px; color: var(--text); background: #070910; font-size: 11.5px; transition: border-color 180ms, box-shadow 180ms; }
+    input[type="text"]:focus { outline: none; border-color: #a9bcff80; box-shadow: 0 0 0 4px #a9bcff1a; }
+    .selection { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    #selection-note { margin: 0; color: #c9d0e6; font-size: 12.5px; line-height: 1.6; overflow-wrap: anywhere; }
+    #selection-path { margin: 5px 0 0; color: var(--faint); font-family: Consolas, ui-monospace, monospace; font-size: 10.5px; line-height: 1.5; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .replace-confirm { display: flex; align-items: flex-start; gap: 9px; margin-top: 12px; color: #e2c690; font-size: 11.5px; line-height: 1.7; }
     .replace-confirm input { margin: 4px 0 0; accent-color: #a5afff; }
-    .primary-button { min-height: 44px; padding: 0 20px; }
-    #run-operation { width: 100%; margin-top: 18px; }
-    #run-operation[data-variant="destructive"] { isolation: isolate; position: relative; overflow: hidden; padding-inline: 48px; transform: none; background: #672f3d; border-color: #b9697b; touch-action: none; }
+    #run-operation { width: 100%; min-height: 50px; margin-top: 16px; font-size: 14.5px; }
+    #run-operation[data-variant="destructive"] { padding-inline: 48px; background: #672f3d; border-color: #b9697b; box-shadow: 0 8px 30px #b4436530; touch-action: none; }
     #run-operation[data-variant="destructive"]:hover:enabled { background: #733645; }
-    #run-operation[data-holding]::after { position: absolute; z-index: -1; inset: 0; content: ''; background: #af5268; transform-origin: left; animation: hold-fill var(--hold-duration) linear both; pointer-events: none; }
-    @keyframes hold-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    #hold-countdown { position: absolute; right: 14px; font-size: 12px; font-variant-numeric: tabular-nums; }
-    #hold-hint { margin: 9px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    #repair-shortcut { margin-top: 9px; }
-    .empty { padding: 24px 15px; border: 1px dashed #a8b4e42e; border-radius: 12px; color: #8e99bb; font-size: 11px; line-height: 1.8; }
-    .notice-stack { position: fixed; top: 72px; right: 20px; z-index: 30; display: grid; align-content: start; gap: 10px; width: min(360px, calc(100vw - 40px)); max-height: calc(100vh - 140px); overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
-    .notice { --notice-accent: #6ba5ff; --notice-text: #b0c5e5; display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; align-items: start; gap: 11px; margin: 0; padding: 15px 14px 15px 16px; border: 1px solid #ffffff10; border-left: 4px solid var(--notice-accent); border-radius: 11px; background: #0e1116; color: var(--notice-text); box-shadow: 0 12px 35px #0005; font-size: 12px; line-height: 1.65; text-align: left; overflow-wrap: anywhere; pointer-events: auto; animation: notice-in 220ms var(--control-ease) both; }
+    #run-operation[data-holding]::after { position: absolute; z-index: -1; inset: 0; content: ''; background: linear-gradient(90deg, #c2566f, #e0708a); transform-origin: left; animation: hold-fill var(--hold-duration) linear both; pointer-events: none; }
+    #hold-countdown { position: absolute; right: 18px; font-size: 12px; font-variant-numeric: tabular-nums; }
+    #hold-hint { margin: 9px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+    #repair-shortcut { margin-top: 10px; }
+    .empty { padding: 24px 16px; border: 1px dashed #a8b4e42e; border-radius: 16px; color: #8e99bb; font-size: 12px; line-height: 1.75; }
+
+    .progress-page { display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 640px; margin: 0 auto; text-align: center; }
+    .progress-page h1 { font-size: 38px; }
+    .progress-page .intro { margin: 12px auto 0; }
+    .orb-wrap { position: relative; margin-bottom: 28px; }
+    #progress-details { width: 100%; }
+    .orb { position: relative; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; color: #e3e8ff; background: radial-gradient(circle at 50% 30%, #2a3560, #121729 72%); box-shadow: 0 0 0 1px #a9bcff3b, 0 18px 60px #6b84ff4d, inset 0 1px #ffffff2b; transition: box-shadow 500ms, background 500ms; }
+    .orb::before { position: absolute; inset: -7px; border-radius: 50%; content: ''; background: conic-gradient(from 0deg, transparent 0 52%, #a9bcff 76%, #f28bb7 90%, transparent 100%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); animation: spin 1.3s linear infinite; }
+    .orb::after { position: absolute; inset: -20px; border: 1px solid #a9bcff40; border-radius: 50%; content: ''; animation: ping 2.6s var(--ease) infinite; }
+    .orb svg { width: 32px; height: 32px; }
+    .burst { position: absolute; inset: 0; pointer-events: none; }
+    .burst i { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; margin: -3.5px; border-radius: 2px; background: var(--c, #a9bcff); opacity: 0; transform: rotate(calc(var(--k) * 30deg)) translateY(0); }
+    .burst i:nth-child(3n) { --c: #f28bb7; border-radius: 50%; }
+    .burst i:nth-child(3n + 1) { --c: #61dca3; }
+    [data-state="success"] .orb { color: #062016; background: radial-gradient(circle at 50% 30%, #9ff0c9, #3fb983 75%); box-shadow: 0 0 0 1px #61dca380, 0 18px 70px #61dca366, inset 0 1px #ffffff80; animation: pop 600ms var(--ease); }
+    [data-state="success"] .orb::before { background: conic-gradient(#61dca3, #a9bcff, #61dca3); animation: none; opacity: .7; }
+    [data-state="success"] .orb svg { stroke-width: 2.4; stroke-dasharray: 24; stroke-dashoffset: 24; animation: draw 650ms 160ms var(--ease) forwards; }
+    [data-state="success"] .burst i { animation: burst 1100ms var(--ease) both; animation-delay: calc(var(--k) * 18ms); }
+    [data-state="error"] .orb { color: #ffd6dd; background: radial-gradient(circle at 50% 30%, #6b2a3a, #2a1018 75%); box-shadow: 0 0 0 1px #ff6b8166, 0 18px 60px #ff6b8140; animation: shake 520ms var(--ease); }
+    [data-state="error"] .orb::before, [data-state="error"] .orb::after, [data-state="success"] .orb::after { animation: none; opacity: 0; }
+
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); width: min(100%, 560px); margin: 30px auto 0; padding: 0; list-style: none; counter-reset: step; }
+    .steps li { position: relative; display: grid; justify-items: center; gap: 8px; color: var(--faint); font-size: 11px; font-weight: 560; transition: color 300ms; }
+    .steps li::before { position: absolute; z-index: -1; top: 7px; right: 50%; left: -50%; height: 2px; content: ''; background: #a9bcff1c; }
+    .steps li:first-child::before { content: none; }
+    .steps li::after { position: absolute; z-index: -1; top: 7px; right: 50%; left: -50%; height: 2px; content: ''; background: linear-gradient(90deg, #a9bcff, #bcbbfb); transform: scaleX(0); transform-origin: left; transition: transform 600ms var(--ease); }
+    .steps li:first-child::after { content: none; }
+    .step-dot { width: 16px; height: 16px; border: 1.5px solid #3c4466; border-radius: 50%; background: #0c101c; transition: border-color 300ms, background 300ms, box-shadow 300ms; }
+    .steps[data-stage="0"] li:nth-child(1), .steps[data-stage="1"] li:nth-child(2), .steps[data-stage="2"] li:nth-child(3), .steps[data-stage="3"] li:nth-child(4) { color: #e6ebff; }
+    .steps[data-stage="0"] li:nth-child(1) .step-dot, .steps[data-stage="1"] li:nth-child(2) .step-dot, .steps[data-stage="2"] li:nth-child(3) .step-dot, .steps[data-stage="3"] li:nth-child(4) .step-dot { border-color: #a9bcff; box-shadow: 0 0 0 4px #a9bcff22, 0 0 16px #a9bcff80; animation: beat 1.4s ease-in-out infinite; }
+    .steps[data-stage="1"] li:nth-child(-n + 1), .steps[data-stage="2"] li:nth-child(-n + 2), .steps[data-stage="3"] li:nth-child(-n + 3), .steps[data-stage="4"] li { color: #c3cdff; }
+    .steps[data-stage="1"] li:nth-child(-n + 1) .step-dot, .steps[data-stage="2"] li:nth-child(-n + 2) .step-dot, .steps[data-stage="3"] li:nth-child(-n + 3) .step-dot, .steps[data-stage="4"] li .step-dot { border-color: transparent; background: linear-gradient(135deg, #e6edff, #a49de6); }
+    .steps[data-stage="1"] li:nth-child(-n + 2)::after, .steps[data-stage="2"] li:nth-child(-n + 3)::after, .steps[data-stage="3"] li::after, .steps[data-stage="4"] li::after { transform: scaleX(1); }
+    [data-state="error"] .steps li { color: var(--faint); }
+
+    .progress-track { position: relative; width: min(100%, 560px); height: 6px; margin: 26px auto 0; border-radius: 6px; background: #a0acf017; box-shadow: inset 0 1px 2px #0008; overflow: hidden; }
+    #progress-fill, #installer-update-fill { position: relative; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8eaff4, #bcd1fc, #b3bff7, #a29bdd); box-shadow: 0 0 18px #8ea4ff99; transition: width 320ms var(--ease); overflow: hidden; }
+    #progress-fill::after, #installer-update-fill::after { position: absolute; inset: 0; content: ''; background: linear-gradient(90deg, transparent, #ffffffb3, transparent); transform: translateX(-100%); animation: bar-sheen 1.5s linear infinite; }
+    [data-state="success"] #progress-fill { background: linear-gradient(90deg, #61dca3, #a9f0cf); box-shadow: 0 0 18px #61dca399; }
+    .progress-meta { display: flex; justify-content: space-between; gap: 20px; width: min(100%, 560px); margin: 12px auto 0; color: #9ba7cb; font-size: 11.5px; text-align: left; }
+    #progress-pct, #installer-update-percent { color: #e3e8ff; font-variant-numeric: tabular-nums; font-weight: 600; }
+    #progress-mb { min-height: 18px; margin: 10px 0 0; color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+    #result-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin-top: 26px; animation: rise 700ms var(--ease) both; }
+    #installer-update-page .progress-track { margin-top: 30px; }
+
+    footer { position: relative; z-index: 3; display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; height: 44px; padding-inline: 24px; border-top: 1px solid #c7cfff12; background: #05070dcc; color: var(--faint); font-size: 11.5px; backdrop-filter: blur(10px); }
+    .build-info { display: flex; align-items: center; gap: 10px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: beat 2.4s ease-in-out infinite; }
+    #installer-version { color: #c9d0e6; font-variant-numeric: tabular-nums; }
+    #github { color: #c9d0e6; }
+    #github svg { width: 12px; height: 12px; transition: transform 200ms var(--ease); }
+    #github:hover svg { transform: translate(2px, -2px); }
+
+    .notice-stack { position: fixed; top: 66px; right: 18px; z-index: 30; display: grid; align-content: start; gap: 10px; width: min(360px, calc(100vw - 36px)); max-height: calc(100vh - 130px); overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
+    .notice { --notice-accent: #8eb2ff; --notice-text: #b9c6e3; position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: start; gap: 11px; margin: 0; padding: 14px 13px 14px 15px; overflow: hidden; border: 1px solid #ffffff14; border-radius: 16px; background: #0d111ef0; color: var(--notice-text); box-shadow: 0 18px 50px #000a, inset 0 1px #ffffff0d; font-size: 12px; line-height: 1.6; text-align: left; overflow-wrap: anywhere; pointer-events: auto; backdrop-filter: blur(16px); animation: notice-in 380ms var(--ease) both; }
+    .notice::before { position: absolute; inset: 0 auto 0 0; width: 3px; content: ''; background: var(--notice-accent); box-shadow: 0 0 14px var(--notice-accent); }
     .notice[data-state="closing"] { pointer-events: none; animation: notice-out 180ms ease-in both; }
-    .notice[data-tone="success"] { --notice-accent: #39d987; --notice-text: #aad8be; }
-    .notice[data-tone="danger"] { --notice-accent: #ff657b; --notice-text: #e0b1bb; }
-    .notice[data-tone="warning"] { --notice-accent: #f4c356; --notice-text: #dac89c; }
-    .notice-icon { display: inline-flex; margin-top: 2px; color: var(--notice-accent); }
-    .notice-icon svg { width: 17px; height: 17px; stroke-width: 1.8; }
+    .notice[data-tone="success"] { --notice-accent: #61dca3; --notice-text: #b1dcc4; }
+    .notice[data-tone="danger"] { --notice-accent: #ff6b81; --notice-text: #e4b6bf; }
+    .notice[data-tone="warning"] { --notice-accent: #f4c356; --notice-text: #ddcaa0; }
+    .notice-icon { display: inline-flex; margin-top: 1px; color: var(--notice-accent); }
+    .notice-icon svg { width: 18px; height: 18px; stroke-width: 1.8; }
     .notice-body { min-width: 0; }
-    .notice-title { margin: 0 0 2px; color: var(--notice-accent); font-size: 13px; font-weight: 600; }
+    .notice-title { margin: 0 0 2px; color: #f0f3ff; font-size: 13px; font-weight: 650; }
     .notice-message { margin: 0; color: var(--notice-text); }
-    .notice-close { display: grid; place-items: center; width: 24px; height: 24px; margin: -3px -3px 0 0; padding: 5px; border: 0; border-radius: 6px; background: transparent; color: var(--notice-accent); opacity: .8; }
+    .notice-close { display: grid; place-items: center; width: 24px; height: 24px; margin: -3px -3px 0 0; padding: 5px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); }
     .notice-close svg { width: 12px; height: 12px; }
-    .notice-close:hover { background: #ffffff08; opacity: 1; }
-    .notice-close:focus-visible { outline-color: var(--notice-accent); }
-    .progress-page { max-width: 620px; margin: 0 auto; padding-top: 74px; text-align: center; }
-    .progress-page h1 { font-size: 36px; letter-spacing: -1.5px; }
-    .progress-page .intro { margin: 15px auto 0; }
-    .progress-icon { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 25px; border: 1px solid #a1b2ff4d; border-radius: 20px; color: #c3ceff; background: #1a2138; }
-    .progress-icon svg { width: 29px; height: 29px; }
-    .progress-track { height: 5px; margin-top: 32px; border-radius: 5px; background: #a0acf013; overflow: hidden; }
-    #progress-fill, #installer-update-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8baffc, #b496f9); transition: width 250ms ease; }
-    .progress-meta { display: flex; justify-content: space-between; gap: 20px; margin-top: 13px; color: #9ba7cb; font-size: 11px; text-align: left; }
-    #progress-pct { color: #d9e1ff; font-variant-numeric: tabular-nums; }
-    #progress-mb { min-height: 18px; margin: 12px 0 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-    #result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 28px; }
-    .spinning { animation: spin 2.5s linear infinite; }
+    .notice-close:hover { background: #ffffff10; color: #fff; }
+    .spinning { animation: spin 1.6s linear infinite; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes arrive { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-    @keyframes notice-in { from { opacity: 0; transform: translateX(24px) scale(.98); } to { opacity: 1; transform: none; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+    @keyframes drop-in { from { opacity: 0; transform: translateY(-12px) scale(.98); } to { opacity: 1; transform: none; } }
+    @keyframes card-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    @keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+    @keyframes sheen { 0% { transform: translateX(-130%); } 45%, 100% { transform: translateX(130%); } }
+    @keyframes float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+    @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+    @keyframes ping { 0% { opacity: .9; transform: scale(.82); } 80%, 100% { opacity: 0; transform: scale(1.28); } }
+    @keyframes beat { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes burst { 0% { opacity: 1; transform: rotate(calc(var(--k) * 30deg)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(calc(var(--k) * 30deg + 40deg)) translateY(-92px) scale(.3); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+    @keyframes bar-sheen { to { transform: translateX(100%); } }
+    @keyframes hold-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes notice-in { from { opacity: 0; transform: translateX(28px) scale(.97); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
     @keyframes notice-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(18px) scale(.98); } }
-    @keyframes button-trash-shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 24% { transform: translate(-.5px, -1px) rotate(-4deg); } 48% { transform: translate(.5px, -1px) rotate(3deg); } 72% { transform: translate(-.25px, -.5px) rotate(-1.5deg); } }
+    @keyframes trash-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 50% { transform: rotate(7deg); } 75% { transform: rotate(-3deg); } }
+    @keyframes bounce-down { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(3px); } }
     @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-      .button:hover:enabled .motion-trash { animation: button-trash-shake 340ms var(--control-ease) both; }
+      .button:hover:enabled .motion-trash { animation: trash-shake 380ms var(--control-ease) both; }
+      .button:hover:enabled .motion-download { animation: bounce-down 700ms var(--ease) infinite; }
+      .button:hover:enabled .motion-spin { transform: rotate(-120deg); }
     }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .button:active:enabled, .button-icon { transform: none !important; } #run-operation[data-holding]::after { content: none; } }
-    @media (max-width: 760px) { .page { padding: 32px 28px; } .target-layout { grid-template-columns: 180px minmax(0, 1fr); gap: 25px; } .actions .button { padding-inline: 8px; font-size: 12px; } h1 { font-size: 36px; } }
-    @media (max-width: 620px) { #home-page { padding-inline: 24px; } .hero { min-height: 252px; padding-top: 46px; } .hero h1 { font-size: 38px; } .hero::before { inset-inline: -24px; } }
-    @media (max-width: 540px) { .actions, .target-layout { grid-template-columns: 1fr; } .progress-page { padding-top: 35px; } .brand span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } [data-state="success"] .orb svg { stroke-dashoffset: 0; } #run-operation[data-holding]::after { content: none; } }
+    @media (max-width: 760px) { .page { padding: 28px 28px; } .target-layout { grid-template-columns: 200px minmax(0, 1fr); gap: 26px; } .features { grid-template-columns: 1fr 1fr; } .features li:last-child { display: none; } }
+    @media (max-width: 600px) { .target-layout, .features { grid-template-columns: 1fr; } .side-card, .features { display: none; } .brand span { display: none; } }
   </style>
 </head>
 <body>
   <svg aria-hidden="true" style="display:none">
     <symbol id="icon-back" viewBox="0 0 24 24"><path d="M19 12H5m5-5-5 5 5 5" /></symbol>
-    <symbol id="icon-external" viewBox="0 0 24 24"><path d="M6 18 18 6M8 6h10v10" /></symbol>
+    <symbol id="icon-external" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9" /></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14" /></symbol>
+    <symbol id="icon-repair" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17a2.1 2.1 0 0 0 3 3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" /></symbol>
     <symbol id="icon-uninstall" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5" /></symbol>
-    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7" /></symbol>
     <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1" /></symbol>
     <symbol id="icon-plugins" viewBox="0 0 24 24"><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4ZM2 22l3-3m2.5-5.5L10 11m.5 5.5L13 14m5-11-4 4h6l-4 4" /></symbol>
     <symbol id="icon-themes" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></symbol>
-    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M10 5H3m9 14H3M14 3v4m2 10v4m5-9h-9m9 7h-5m5-14h-7M8 10v4m0-2H3" /></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z" /><path d="m9 12 2 2 4-4" /></symbol>
+    <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5" /></symbol>
+    <symbol id="icon-log" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8m-8 4h5" /></symbol>
     <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
     <symbol id="icon-notice-success" viewBox="0 0 24 24"><path d="M20 11v1a8 8 0 1 1-5-7.4M9 11l3 3 9-9" /></symbol>
     <symbol id="icon-notice-danger" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3h.01" /></symbol>
     <symbol id="icon-notice-warning" viewBox="0 0 24 24"><path d="m10.3 4.2-8 14a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0ZM12 9v4m0 4h.01" /></symbol>
     <symbol id="icon-notice-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10h.01" /></symbol>
   </svg>
-  <div class="shell">
+  <div id="app-shell" class="shell" data-page="home-page">
+    <div class="dome" aria-hidden="true"></div>
+    <canvas id="scene" aria-hidden="true"></canvas>
     <header class="titlebar">
-      <div class="brand">moggcord.<span>Installer</span></div>
-      <div class="window-actions">
-        <button id="minimize" aria-label="Minimize"><svg viewBox="0 0 24 24"><path d="M6 12h12" /></svg></button>
-        <button id="close" aria-label="Close installer"><svg><use href="#icon-close" /></svg></button>
+      <div class="nav-pill">
+        <div class="brand">moggcord.<span>Installer</span></div>
+        <div class="window-actions">
+          <button id="minimize" aria-label="Minimize"><svg viewBox="0 0 24 24"><path d="M6 12h12" /></svg></button>
+          <button id="close" aria-label="Close installer"><svg><use href="#icon-close" /></svg></button>
+        </div>
       </div>
     </header>
     <main>
       <section id="installer-update-page" class="page progress-page" aria-labelledby="installer-update-title" hidden>
-        <div class="progress-icon" aria-hidden="true"><svg class="spinning"><use href="#icon-refresh" /></svg></div>
-        <h1 id="installer-update-title">Updating the installer</h1>
-        <p class="intro">A newer installer opens automatically when an update is available.</p>
+        <div class="orb-wrap rise"><div class="orb" aria-hidden="true"><svg class="spinning"><use href="#icon-refresh" /></svg></div></div>
+        <h1 id="installer-update-title" class="rise" style="--i:1">Updating the installer</h1>
+        <p class="intro rise" style="--i:2">A newer installer opens automatically when an update is available.</p>
         <div id="installer-update-track" class="progress-track" role="progressbar" aria-label="Installer update progress" aria-valuemin="0" aria-valuemax="100"><div id="installer-update-fill"></div></div>
         <div class="progress-meta"><span id="installer-update-message" role="status">Checking for a newer installer…</span><span id="installer-update-percent"></span></div>
       </section>
       <section id="home-page" class="page" aria-labelledby="welcome-title">
         <div class="hero">
-          <img src="{{ICON_BASE64}}" width="74" height="68" alt="" />
-          <h1 id="welcome-title">Set up Moggcord.</h1>
+          <div class="release-pill rise"><span class="release-badge">Desktop</span><span>Windows x64</span><span class="pill-dot" aria-hidden="true"></span><span id="hero-version">Installer</span></div>
+          <h1 id="welcome-title" class="rise" style="--i:1">
+            <span class="wordmark"><span>moggcord</span><img src="{{ICON_BASE64}}" width="60" height="60" alt="" /><span>the missing</span></span>
+            piece of<br /><span class="title-accent">your Discord.</span>
+          </h1>
+          <p class="lead rise" style="--i:2">Install, repair or remove Moggcord in seconds. Discord closes and opens again by itself.</p>
+          <div class="actions rise" style="--i:3" aria-label="Setup actions">
+            <button class="button" data-variant="primary" data-size="lg" data-action="install" type="button"><span class="button-icon motion-download" aria-hidden="true"><svg><use href="#icon-download" /></svg></span>Install Moggcord</button>
+            <button class="button" data-variant="secondary" data-size="lg" data-action="repair" type="button"><span class="button-icon motion-spin" aria-hidden="true"><svg><use href="#icon-repair" /></svg></span>Repair</button>
+            <button class="button" data-variant="danger" data-size="lg" data-action="uninstall" type="button"><span class="button-icon motion-trash" aria-hidden="true"><svg><use href="#icon-uninstall" /></svg></span>Uninstall</button>
+          </div>
         </div>
-        <div class="actions" aria-label="Setup actions">
-          <button class="button" data-variant="primary" data-action="install" type="button">Install Moggcord</button>
-          <button class="button" data-variant="secondary" data-action="repair" type="button">Repair Moggcord</button>
-          <button class="button" data-variant="outline" data-action="uninstall" type="button">
-            <span class="button-icon motion-trash" aria-hidden="true"><svg><use href="#icon-uninstall" /></svg></span>Uninstall Moggcord
-          </button>
-        </div>
+        <ul class="features rise" style="--i:4" aria-label="What you get">
+          <li><span class="feature-icon" aria-hidden="true"><svg><use href="#icon-plugins" /></svg></span><strong>Plugins</strong><span>Moggcord, Vencord and Equicord</span></li>
+          <li><span class="feature-icon" aria-hidden="true"><svg><use href="#icon-themes" /></svg></span><strong>Themes</strong><span>Theme Library built in</span></li>
+          <li><span class="feature-icon" aria-hidden="true"><svg><use href="#icon-shield" /></svg></span><strong>Safe setup</strong><span>Repair or undo any time</span></li>
+        </ul>
       </section>
       <section id="target-page" class="page" aria-labelledby="target-title" hidden>
         <button id="back" class="button back" data-variant="ghost" data-size="sm" type="button"><svg><use href="#icon-back" /></svg>All actions</button>
         <div class="target-layout">
-          <div>
+          <div class="rise">
+            <p class="eyebrow">Step 2 of 3</p>
             <h1 id="target-title" tabindex="-1">Install Moggcord</h1>
             <p id="target-description" class="intro" hidden>Your Moggcord settings stay saved.</p>
+            <div class="side-card">
+              <p><svg aria-hidden="true"><use href="#icon-restart" /></svg><span>Discord closes for a moment and opens again by itself.</span></p>
+              <p><svg aria-hidden="true"><use href="#icon-shield" /></svg><span>Discord's original files are kept, so you can undo everything.</span></p>
+            </div>
           </div>
-          <div>
+          <div class="rise" style="--i:1">
             <div class="targets-header"><h2>Choose your Discord</h2><button id="refresh" class="button" data-variant="ghost" data-size="sm" type="button"><svg><use href="#icon-refresh" /></svg>Refresh</button></div>
             <div id="discord-list" role="group" aria-label="Discord installations"></div>
             <details class="manual">
@@ -223,7 +334,7 @@
               <p id="selection-note" role="status">Select a Discord installation to continue.</p>
               <p id="selection-path"></p>
               <label id="replace-confirm" class="replace-confirm" hidden><input type="checkbox" id="replace-other" /><span>Replace the other mod on this Discord installation with Moggcord.</span></label>
-              <button id="run-operation" class="button primary-button" data-variant="primary" type="button" disabled>
+              <button id="run-operation" class="button" data-variant="primary" type="button" disabled>
                 <span id="run-icon" class="button-icon" aria-hidden="true" hidden><svg><use href="#icon-uninstall" /></svg></span><span id="run-label">Install Moggcord</span>
                 <span id="hold-countdown" aria-hidden="true" hidden></span>
               </button>
@@ -233,20 +344,29 @@
           </div>
         </div>
       </section>
-      <section id="progress-page" class="page progress-page" aria-labelledby="progress-title" hidden>
-        <div id="progress-icon" class="progress-icon" aria-hidden="true"></div>
-        <h1 id="progress-title" tabindex="-1">Preparing Discord</h1>
-        <p id="progress-description" class="intro"></p>
+      <section id="progress-page" class="page progress-page" aria-labelledby="progress-title" data-state="running" hidden>
+        <div class="orb-wrap rise">
+          <div id="progress-icon" class="orb" aria-hidden="true"></div>
+          <div class="burst" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i><i style="--k:7"></i><i style="--k:8"></i><i style="--k:9"></i><i style="--k:10"></i><i style="--k:11"></i></div>
+        </div>
+        <h1 id="progress-title" class="rise" style="--i:1" tabindex="-1">Preparing Discord</h1>
+        <p id="progress-description" class="intro rise" style="--i:2"></p>
+        <ol id="progress-steps" class="steps rise" style="--i:3" data-stage="0" aria-hidden="true">
+          <li><span class="step-dot"></span><span id="step-fetch">Download</span></li>
+          <li><span class="step-dot"></span><span>Close Discord</span></li>
+          <li><span class="step-dot"></span><span id="step-change">Install</span></li>
+          <li><span class="step-dot"></span><span>Open Discord</span></li>
+        </ol>
         <div id="progress-details" aria-live="polite">
           <div id="progress-track" class="progress-track" role="progressbar" aria-label="Setup progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
           <div class="progress-meta"><span id="progress-label">Preparing…</span><span id="progress-pct">0%</span></div>
           <p id="progress-mb"></p>
         </div>
-        <div id="result-actions" hidden><button id="another-action" class="button" data-variant="ghost" type="button">Back to setup</button><button id="view-notification" class="button" data-variant="link" type="button">View details</button><button id="done" class="button primary-button" data-variant="primary" type="button">Done<svg><use href="#icon-check" /></svg></button></div>
+        <div id="result-actions" hidden><button id="another-action" class="button" data-variant="ghost" type="button">Back to setup</button><button id="view-notification" class="button" data-variant="link" type="button">View details</button><button id="open-log" class="button" data-variant="outline" data-size="sm" type="button" hidden><svg aria-hidden="true"><use href="#icon-log" /></svg>Open log</button><button id="done" class="button" data-variant="primary" data-size="lg" type="button">Done<svg><use href="#icon-check" /></svg></button></div>
       </section>
     </main>
     <footer>
-      <div class="build-info"><span id="installer-version">Moggcord Installer</span><span class="build-platform">Windows x64</span></div>
+      <div class="build-info"><span class="status-dot" aria-hidden="true"></span><span id="installer-version">Moggcord Installer</span></div>
       <button id="github" class="button" data-variant="ghost" data-size="sm" type="button">GitHub<svg aria-hidden="true"><use href="#icon-external" /></svg></button>
     </footer>
     <section class="notice-stack" aria-label="Notifications">
@@ -260,9 +380,9 @@
     const runButton = $('run-operation');
     const holdDuration = 3000;
     const actions = {
-      install: { label: 'Install Moggcord', running: 'Installing Moggcord.', finished: 'You’re all set.', detail: 'Moggcord is installed. Your selected Discord is starting.' },
-      repair: { label: 'Repair Moggcord', running: 'Restoring Moggcord.', finished: 'Good as new.', detail: 'Moggcord has been repaired. Your selected Discord is starting.' },
-      uninstall: { label: 'Uninstall Moggcord', running: 'Removing Moggcord.', finished: 'Back to the original.', detail: 'Moggcord has been removed. Your selected Discord is starting.' }
+      install: { label: 'Install Moggcord', step: 'Install', running: 'Installing Moggcord.', finished: 'You’re all set.', detail: 'Moggcord is installed. Your selected Discord is starting.' },
+      repair: { label: 'Repair Moggcord', step: 'Repair', running: 'Restoring Moggcord.', finished: 'Good as new.', detail: 'Moggcord has been repaired. Your selected Discord is starting.' },
+      uninstall: { label: 'Uninstall Moggcord', step: 'Remove', running: 'Removing Moggcord.', finished: 'Back to the original.', detail: 'Moggcord has been removed. Your selected Discord is starting.' }
     };
     let discords = [];
     let selected = null;
@@ -290,6 +410,7 @@
       }
       if (id !== 'progress-page') showNotice('progress-notice');
       for (const page of ['home-page', 'target-page', 'progress-page', 'installer-update-page']) $(page).hidden = page !== id;
+      $('app-shell').dataset.page = id;
       document.querySelector('main').scrollTop = 0;
     }
 
@@ -404,7 +525,7 @@
       renderTargets();
       const eligible = discords.filter(d => action === 'install' ? !d.installed && !d.otherMod : d.installed);
       if (eligible.length === 1) selectTarget(eligible[0]);
-      $('target-title').focus();
+      $('target-title').focus({ preventScroll: true });
     }
 
     function renderTargets() {
@@ -416,10 +537,11 @@
         empty.textContent = detecting ? 'Finding your Discord installations…' : detectionFailed ? 'Discord detection failed. Try Refresh or add a custom resources folder.' : 'No Discord installations found. Install Discord first, or add a custom resources folder below.';
         list.append(empty);
       }
-      for (const target of discords) {
+      for (const [index, target] of discords.entries()) {
         const card = document.createElement('button');
         card.className = 'discord-card';
         card.type = 'button';
+        card.style.setProperty('--i', String(index));
         card.setAttribute('aria-pressed', String(target === selected));
         const channel = document.createElement('span');
         channel.className = 'channel-icon' + (target.name.includes('Canary') ? ' canary' : '');
@@ -573,25 +695,37 @@
       $('progress-pct').textContent = Math.round(value) + '%';
       $('progress-fill').style.width = value + '%';
       $('progress-track').setAttribute('aria-valuenow', String(Math.round(value)));
+      $('progress-steps').dataset.stage = String(value >= 97 ? 3 : value > 90 ? 2 : value >= 90 ? 1 : 0);
       $('progress-mb').textContent = downloaded !== null && total !== null ? downloaded.toFixed(1) + ' / ' + total.toFixed(1) + ' MB' : '';
     }
 
-    function finishOperation(success, detail = '') {
+    function canOpenLog() {
+      return typeof window.moggcord.openLog === 'function';
+    }
+
+    function finishOperation(success, detail = '', warning = '') {
       clearInterval(pollTimer);
       pollTimer = null;
       busy = false;
       $('close').disabled = false;
+      $('progress-page').dataset.state = success ? 'success' : 'error';
+      if (success) {
+        $('progress-steps').dataset.stage = '4';
+        $('progress-fill').style.width = '100%';
+        $('progress-pct').textContent = '100%';
+      }
       $('progress-icon').innerHTML = icon(success ? 'check' : 'close');
       $('progress-title').textContent = success ? detail === 'alreadyInstalled' ? 'Already at home.' : actions[action].finished : 'Setup couldn’t finish.';
       $('progress-description').textContent = selected?.name || '';
       $('progress-details').hidden = true;
       $('result-actions').hidden = false;
-      showNotice('progress-notice', {
+      $('open-log').hidden = !canOpenLog() || (success && !warning);
+      showNotice('progress-notice', success && warning ? { tone: 'warning', title: 'Discord didn’t open', message: warning } : {
         tone: success ? detail === 'alreadyInstalled' ? 'info' : 'success' : 'danger',
         title: success ? detail === 'alreadyInstalled' ? 'Already installed' : action === 'repair' ? 'Repair complete' : action === 'uninstall' ? 'Uninstall complete' : 'Installation complete' : 'Setup failed',
         message: success ? detail === 'alreadyInstalled' ? 'Nothing was changed. Use Repair to restore your Moggcord files.' : actions[action].detail : detail || 'The operation failed. Please return to setup and try again.'
       });
-      $('progress-title').focus();
+      $('progress-title').focus({ preventScroll: true });
     }
 
     function pollOperation() {
@@ -599,7 +733,7 @@
       try {
         const status = window.moggcord.getInjectStatus();
         if (status.state === 'running' && typeof status.percent === 'number') setLoading(true, status.label || 'Preparing…', status.percent, status.downloaded ?? null, status.total ?? null);
-        if (status.state === 'done') finishOperation(true, status.result);
+        if (status.state === 'done') finishOperation(true, status.result, status.warning);
         else if (status.state === 'error') finishOperation(false, status.error || 'The operation failed. Please try again.');
       } catch (error) {
         finishOperation(false, 'The installer connection was interrupted. Check your Discord installation before trying again.');
@@ -610,6 +744,11 @@
       if (busy || $('run-operation').disabled || !selected) return;
       busy = true;
       $('close').disabled = true;
+      $('progress-page').dataset.state = 'running';
+      $('progress-steps').dataset.stage = '0';
+      $('step-fetch').textContent = action === 'uninstall' ? 'Prepare' : 'Download';
+      $('step-change').textContent = actions[action].step;
+      $('open-log').hidden = true;
       $('progress-icon').innerHTML = icon('refresh', true);
       $('progress-title').textContent = actions[action].running;
       $('progress-description').textContent = selected.name + ' will restart when everything is ready.';
@@ -618,7 +757,7 @@
       showNotice('progress-notice');
       showPage('progress-page');
       setLoading(true, 'Preparing…', 0);
-      $('progress-title').focus();
+      $('progress-title').focus({ preventScroll: true });
       try {
         const started = window.moggcord.startOperation(action, selected.path, $('replace-other').checked);
         if (!started?.started) return finishOperation(false, started?.error || 'Could not start setup. Please try again.');
@@ -659,6 +798,91 @@
       updateHold();
     }
 
+    function startScene() {
+      const canvas = $('scene');
+      const context = typeof requestAnimationFrame === 'function' ? canvas?.getContext?.('2d') : null;
+      if (!context) return;
+      const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const shell = $('app-shell');
+      const glyphs = ' .:-=+*x#%@';
+      const cell = { width: 9, height: 15 };
+      const dome = { top: 104, radius: 860 };
+      const pointer = { x: -999, y: -999 };
+      const motes = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), speed: .006 + Math.random() * .014, size: .6 + Math.random() * 1.3, phase: Math.random() * 6.3 }));
+      let width = 0;
+      let height = 0;
+      let last = 0;
+      const begun = performance.now();
+      function resize() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        width = canvas.clientWidth;
+        height = canvas.clientHeight;
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.font = '600 12px Consolas, "Cascadia Mono", ui-monospace, monospace';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+      }
+      function draw(now) {
+        if (!still) requestAnimationFrame(draw);
+        if (!still && now - last < 33) return;
+        last = now;
+        const time = (now - begun) / 1000;
+        const intro = Math.min(1, time / 1.8);
+        const centerX = width / 2;
+        const centerY = dome.top + dome.radius;
+        const band = Math.min(height, 320);
+        context.clearRect(0, 0, width, height);
+        for (let y = cell.height / 2; y < band; y += cell.height) {
+          for (let x = cell.width / 2; x < width; x += cell.width) {
+            const edge = Math.hypot(x - centerX, y - centerY) - dome.radius;
+            if (edge < 0) continue;
+            const wave = .5 + .5 * Math.sin(x * .043 + time * .9 + Math.sin(y * .07 - time * .6) * 1.8) * Math.cos(y * .052 - time * .35 + x * .006);
+            const near = Math.max(0, 1 - Math.hypot(x - pointer.x, y - pointer.y) / 95);
+            const level = Math.min(1, Math.exp(-edge / 125) * (.3 + .7 * wave) * Math.max(0, Math.min(1, intro * 1.7 - edge / 320)) + near * .65);
+            if (level < .07) continue;
+            const glyph = glyphs[Math.min(glyphs.length - 1, Math.floor(level * glyphs.length + (near > .2 ? Math.random() * 3 : 0)))];
+            context.fillStyle = 'rgba(' + (150 + level * 85 | 0) + ',' + (166 + level * 72 | 0) + ',255,' + ((.1 + level * .66) * (1 - y / band * .6)).toFixed(3) + ')';
+            context.fillText(glyph, x, y);
+          }
+        }
+        const rim = context.createLinearGradient(0, 0, width, 0);
+        rim.addColorStop(0, 'rgba(169,188,255,0)');
+        rim.addColorStop(.5, 'rgba(214,223,255,' + (.55 * intro).toFixed(3) + ')');
+        rim.addColorStop(1, 'rgba(169,188,255,0)');
+        context.save();
+        context.beginPath();
+        context.arc(centerX, centerY, dome.radius, Math.PI, Math.PI * 2);
+        context.strokeStyle = rim;
+        context.lineWidth = 1.2;
+        context.shadowColor = 'rgba(140,165,255,.85)';
+        context.shadowBlur = 18;
+        context.stroke();
+        context.restore();
+        for (const mote of motes) {
+          const y = ((mote.y - time * mote.speed) % 1 + 1) % 1 * height;
+          const x = mote.x * width + Math.sin(time * .5 + mote.phase) * 14;
+          const alpha = Math.max(0, .14 + .2 * Math.sin(time * 1.3 + mote.phase)) * intro;
+          context.fillStyle = 'rgba(196,208,255,' + alpha.toFixed(3) + ')';
+          context.beginPath();
+          context.arc(x, y, mote.size, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+      resize();
+      window.addEventListener('resize', resize);
+      window.addEventListener('pointermove', event => {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        shell.style.setProperty('--mx', event.clientX + 'px');
+        shell.style.setProperty('--my', event.clientY + 'px');
+      });
+      document.addEventListener('mouseleave', () => { pointer.x = -999; pointer.y = -999; });
+      canvas.classList.add('is-rendering');
+      requestAnimationFrame(draw);
+    }
+
     document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => chooseAction(button.dataset.action)));
     $('back').addEventListener('click', () => { if (!busy) showPage('home-page'); });
     $('refresh').addEventListener('click', loadDiscords);
@@ -692,13 +916,17 @@
       const options = noticeStates.get('progress-notice')?.options;
       if (options) showNotice('progress-notice', options);
     });
+    $('open-log').addEventListener('click', () => { if (canOpenLog()) window.moggcord.openLog(); });
     $('done').addEventListener('click', () => window.moggcord.closeApp());
     $('close').addEventListener('click', () => { if (!busy) window.moggcord.closeApp(); });
     $('minimize').addEventListener('click', () => window.moggcord.minimizeApp());
     $('github').addEventListener('click', () => window.moggcord.openUrl('https://github.com/moggcord/moggcord'));
     document.addEventListener('keydown', event => { if (event.key === 'Escape' && !busy && !$('target-page').hidden) showPage('home-page'); });
-    try { $('installer-version').textContent = 'v' + window.moggcord.getInstallerVersion(); }
-    catch (error) { $('installer-version').textContent = 'Moggcord Installer'; }
+    try {
+      const version = 'v' + window.moggcord.getInstallerVersion();
+      $('installer-version').textContent = 'Moggcord Installer ' + version;
+      $('hero-version').textContent = version;
+    } catch (error) { $('installer-version').textContent = 'Moggcord Installer'; }
     function finishInstallerUpdate() {
       clearInterval(installerUpdateTimer);
       installerUpdateTimer = null;
@@ -733,6 +961,7 @@
       } catch (error) { finishInstallerUpdate(); }
     }
 
+    try { startScene(); } catch (error) { $('scene').hidden = true; }
     checkInstallerUpdate();
   </script>
 </body>

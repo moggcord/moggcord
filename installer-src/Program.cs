@@ -45,6 +45,7 @@ namespace MoggcordInstaller
                 return;
             }
 
+            InstallerLog.Write($"Moggcord Installer {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} started on {RuntimeInformation.OSDescription}. Administrator: {InstallerLog.IsElevated}.");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -128,8 +129,7 @@ namespace MoggcordInstaller
                     return 1;
                 }
 
-                Console.WriteLine("[Moggcord] Done. Discord will start now.");
-                backend.StartDiscordPublic(target.path);
+                Console.WriteLine("[Moggcord] Done.");
                 return 0;
             }
             catch (Exception ex)
@@ -293,6 +293,7 @@ namespace MoggcordInstaller
                     getInstallerVersion: () => chrome.webview.hostObjects.sync.backend.GetInstallerVersion(),
                     startInstallerUpdate: () => chrome.webview.hostObjects.sync.backend.StartInstallerUpdate(),
                     getInstallerUpdateStatus: () => JSON.parse(chrome.webview.hostObjects.sync.backend.GetInstallerUpdateStatus()),
+                    openLog: () => chrome.webview.hostObjects.backend.OpenLog(),
                     uninject: async (path) => JSON.parse(await chrome.webview.hostObjects.backend.Uninject(path)),
                     minimizeApp: () => chrome.webview.hostObjects.backend.MinimizeApp(),
                     closeApp: () => chrome.webview.hostObjects.backend.CloseApp(),
@@ -320,7 +321,7 @@ namespace MoggcordInstaller
             using (var reader = new StreamReader(stream))
             {
                 var html = reader.ReadToEnd();
-                using (var font = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoggcordInstaller.fonts.InterVariable.woff2"))
+                using (var font = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoggcordInstaller.fonts.GeistVariable.woff2"))
                 using (var bytes = new MemoryStream())
                 {
                     font.CopyTo(bytes);
@@ -438,6 +439,19 @@ namespace MoggcordInstaller
             catch { }
         }
 
+        public void OpenLog()
+        {
+            var target = File.Exists(InstallerLog.FilePath) ? InstallerLog.FilePath : Path.GetDirectoryName(InstallerLog.FilePath);
+            try
+            {
+                Process.Start(new ProcessStartInfo(target) { UseShellExecute = true })?.Dispose();
+            }
+            catch (Exception error) when (error is Win32Exception or InvalidOperationException)
+            {
+                InstallerLog.Write("The installer log could not be opened: " + error.Message);
+            }
+        }
+
         public void SetStatus(string type, string text)
         {
             if (_form == null || _webView == null)
@@ -517,17 +531,19 @@ namespace MoggcordInstaller
         {
             // Already Moggcord → not a third-party mod
             if (await IsInjected(path)) return false;
-            return await Task.Run(() => {
-                var appDir = System.IO.Path.Combine(path, "app");
-                var pkgPath = System.IO.Path.Combine(appDir, "package.json");
-                var content = File.Exists(pkgPath) ? File.ReadAllText(pkgPath) : "";
-                var appAsar = Path.Combine(path, "app.asar");
-                if (File.Exists(appAsar) && new FileInfo(appAsar).Length < 2_000_000)
-                    content += File.ReadAllText(appAsar);
-                return content.Contains("vencord", StringComparison.OrdinalIgnoreCase)
-                    || content.Contains("equicord", StringComparison.OrdinalIgnoreCase)
-                    || content.Contains("openasar", StringComparison.OrdinalIgnoreCase);
-            });
+            return await Task.Run(() => IsThirdPartyMod(path));
+        }
+
+        private static bool IsThirdPartyMod(string path)
+        {
+            var pkgPath = Path.Combine(path, "app", "package.json");
+            var content = File.Exists(pkgPath) ? File.ReadAllText(pkgPath) : "";
+            var appAsar = Path.Combine(path, "app.asar");
+            if (File.Exists(appAsar) && new FileInfo(appAsar).Length < 2_000_000)
+                content += File.ReadAllText(appAsar);
+            return content.Contains("vencord", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("equicord", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("openasar", StringComparison.OrdinalIgnoreCase);
         }
 
         private static readonly string[] DiscordExecutables = { "Discord.exe", "DiscordPTB.exe", "DiscordCanary.exe", "DiscordDevelopment.exe" };
@@ -635,6 +651,7 @@ namespace MoggcordInstaller
         private volatile string _injectJobState = "idle"; // idle | running | done | error
         private string _injectJobError = "";
         private string _injectJobResult = "";
+        private volatile string _injectJobWarning = "";
         private readonly object _operationLock = new object();
 
         public string StartInject(string resourcesPath) => StartOperation("install", resourcesPath, false);
@@ -651,6 +668,7 @@ namespace MoggcordInstaller
                 _injectJobState = "running";
                 _injectJobError = "";
                 _injectJobResult = "";
+                _injectJobWarning = "";
                 Task.Run(async () =>
                 {
                     try
@@ -660,6 +678,7 @@ namespace MoggcordInstaller
                     }
                     catch (Exception ex)
                     {
+                        InstallerLog.Write($"{action} failed: {ex}");
                         _injectJobError = ex.Message;
                         _injectJobState = "error";
                     }
@@ -675,7 +694,8 @@ namespace MoggcordInstaller
             {
                 state,
                 error = _injectJobError,
-                result = _injectJobResult
+                result = _injectJobResult,
+                warning = _injectJobWarning
             });
         }
 
@@ -715,16 +735,61 @@ namespace MoggcordInstaller
             if (FindDiscordExecutable(Path.GetDirectoryName(path)) == null)
                 throw new InvalidOperationException("The Discord executable is missing next to this resources folder. Check the selected path.");
 
+            InstallerLog.Write($"{action} started for {path}");
             if (action == "uninstall")
             {
-                await Task.Run(() => DoUninject(path));
+                await Task.Run(() => RunWithDiscordClosed(path, false, () => DoUninject(path)));
                 return "uninstalled";
             }
 
             await EnsureDistAsync();
             if (action == "install" && await IsInjected(path)) return "alreadyInstalled";
-            await Task.Run(() => DoInject(path));
+            await Task.Run(() => RunWithDiscordClosed(path, true, () => DoInject(path)));
+            InstallerLog.Write($"{action} finished for {path}");
             return action == "repair" ? "repaired" : "installed";
+        }
+
+        private void RunWithDiscordClosed(string resPath, bool installing, Action change)
+        {
+            SetProgress(90, "Closing Discord...");
+            KillDiscord(resPath);
+            Exception failure = null;
+            try
+            {
+                change();
+            }
+            catch (Exception error)
+            {
+                failure = error;
+                InstallerLog.Write("The change failed, restoring a startable Discord: " + error);
+                RestoreStartableDiscord(resPath);
+            }
+
+            SetProgress(97, "Starting Discord...");
+            var running = StartDiscord(resPath);
+            if (failure == null && installing && running != null && !IsMoggcordPackage(Path.Combine(running, "app", "package.json")))
+            {
+                InstallerLog.Write("Discord started from a version without Moggcord: " + running);
+                SetProgress(98, "Adding Moggcord to the Discord version that started...");
+                KillDiscord(resPath);
+                try
+                {
+                    InjectInto(running);
+                }
+                catch (Exception error)
+                {
+                    failure = error;
+                    InstallerLog.Write("Installing into the started version failed: " + error);
+                    RestoreStartableDiscord(running);
+                }
+                running = StartDiscord(resPath);
+            }
+
+            if (running == null)
+                _injectJobWarning = "Discord didn’t open by itself. Start it from the Start menu or the taskbar.";
+            if (failure != null)
+                throw new IOException(failure.Message + (running != null ? " Discord was restored and started again." : " Discord was restored."), failure);
+            SetProgress(100, "Done");
         }
 
         private async Task EnsureDistAsync()
@@ -747,9 +812,11 @@ namespace MoggcordInstaller
             }
             catch (Exception ex)
             {
+                InstallerLog.Write("Online download failed: " + ex);
                 SetStatus("loading", $"Online download failed ({ex.Message}). Trying bundled files...");
             }
 
+            InstallerLog.Write("Using the Moggcord files bundled with this installer.");
             if (await TryUseBundledDistAsync())
                 return;
 
@@ -802,6 +869,7 @@ namespace MoggcordInstaller
             if (string.IsNullOrEmpty(zipUrl))
                 throw new Exception($"'{DIST_ZIP}' not found in the GitHub release. The release may not be published yet.");
 
+            InstallerLog.Write($"Downloading Moggcord {releaseTag} from {zipUrl}");
             SetProgress(5, $"Downloading Moggcord {releaseTag ?? "latest"}...");
             var tmpZip = Path.Combine(Path.GetTempPath(), "moggcord-dist.zip");
 
@@ -882,11 +950,86 @@ namespace MoggcordInstaller
 
         private void ExtractDistZip(string zipPath)
         {
-            if (Directory.Exists(_distDir)) Directory.Delete(_distDir, true);
-            Directory.CreateDirectory(_distDir);
+            var staging = _distDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + ".new";
+            if (Directory.Exists(staging)) Directory.Delete(staging, true);
+            Directory.CreateDirectory(staging);
+            ExtractInto(zipPath, staging);
+            if (!File.Exists(Path.Combine(staging, "patcher.js")))
+            {
+                Directory.Delete(staging, true);
+                throw new InvalidDataException("The Moggcord package is incomplete.");
+            }
+            ReplaceDist(staging);
+        }
 
-            // Normalize _distDir with a guaranteed trailing separator for safe StartsWith checks
-            var normalizedDistDir = _distDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+        private static readonly string[] CriticalDistFiles = { "patcher.js", "preload.js", "renderer.js", "renderer.css", "package.json", "build-info.json" };
+
+        private void ReplaceDist(string staging)
+        {
+            if (!Directory.Exists(_distDir))
+            {
+                Directory.Move(staging, _distDir);
+                return;
+            }
+            var previous = _distDir + ".old-" + DateTime.UtcNow.Ticks;
+            try
+            {
+                Directory.Move(_distDir, previous);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                InstallerLog.Write("The Moggcord folder is in use, updating its files in place: " + error.Message);
+                CopyOver(staging, _distDir, true);
+                Directory.Delete(staging, true);
+                return;
+            }
+            try
+            {
+                Directory.Move(staging, _distDir);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                Directory.Move(previous, _distDir);
+                throw new IOException("The new Moggcord files could not be put in place. " + error.Message, error);
+            }
+            foreach (var old in Directory.GetDirectories(Path.GetDirectoryName(_distDir), Path.GetFileName(_distDir) + ".old-*"))
+            {
+                try
+                {
+                    Directory.Delete(old, true);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    InstallerLog.Write("An old Moggcord folder is still in use and was kept: " + old);
+                }
+            }
+        }
+
+        private static void CopyOver(string source, string destination, bool topLevel)
+        {
+            Directory.CreateDirectory(destination);
+            foreach (var file in Directory.GetFiles(source))
+            {
+                var name = Path.GetFileName(file);
+                try
+                {
+                    File.Copy(file, Path.Combine(destination, name), true);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    if (topLevel && CriticalDistFiles.Contains(name, StringComparer.OrdinalIgnoreCase))
+                        throw new IOException($"{name} is in use by another program. Close Discord completely and try again.", error);
+                    InstallerLog.Write($"Skipped {file}: {error.Message}");
+                }
+            }
+            foreach (var directory in Directory.GetDirectories(source))
+                CopyOver(directory, Path.Combine(destination, Path.GetFileName(directory)), false);
+        }
+
+        private void ExtractInto(string zipPath, string destination)
+        {
+            // Normalize the destination with a guaranteed trailing separator for safe StartsWith checks
+            var normalizedDistDir = destination.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                                     + Path.DirectorySeparatorChar;
 
             using (var archive = ZipFile.OpenRead(zipPath))
@@ -906,7 +1049,7 @@ namespace MoggcordInstaller
                     if (entryPath.Contains(".."))
                         continue;
 
-                    var fullPath = Path.GetFullPath(Path.Combine(_distDir, entryPath));
+                    var fullPath = Path.GetFullPath(Path.Combine(destination, entryPath));
 
                     // Security check: ensure resolved path stays inside _distDir
                     if (!fullPath.StartsWith(normalizedDistDir, StringComparison.OrdinalIgnoreCase))
@@ -937,18 +1080,73 @@ namespace MoggcordInstaller
 
         private void DoInject(string resPath)
         {
+            InjectInto(resPath);
+            foreach (var sibling in SiblingResources(resPath))
+            {
+                if (!IsMoggcordPackage(Path.Combine(sibling, "app", "package.json")) && IsThirdPartyMod(sibling))
+                {
+                    InstallerLog.Write("Skipped another Discord version with a different mod: " + sibling);
+                    continue;
+                }
+                try
+                {
+                    InjectInto(sibling);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    InstallerLog.Write($"Could not add Moggcord to {sibling}: {error.Message}");
+                    RestoreStartableDiscord(sibling);
+                }
+            }
+            InstallDefaultSettings();
+            MarkPostInstallRelaunch();
+        }
+
+        private static IEnumerable<string> SiblingResources(string resPath)
+        {
+            var appDirectory = Path.GetDirectoryName(Path.GetFullPath(resPath));
+            var root = GetChannelRoot(appDirectory);
+            if (root == appDirectory) return Array.Empty<string>();
+            return Directory.GetDirectories(root, "app-*")
+                .Where(directory => !string.Equals(directory, appDirectory, StringComparison.OrdinalIgnoreCase) && FindDiscordExecutable(directory) != null)
+                .Select(directory => Path.Combine(directory, "resources"))
+                .Where(resources => File.Exists(Path.Combine(resources, "app.asar")) || File.Exists(Path.Combine(resources, "_app.asar")))
+                .ToList();
+        }
+
+        private static bool IsStockArchive(string path) => File.Exists(path) && new FileInfo(path).Length >= 1_000_000;
+
+        private void RestoreStartableDiscord(string resPath)
+        {
             var appDir = Path.Combine(resPath, "app");
             var backup = Path.Combine(resPath, "_app.asar");
             var appAsar = Path.Combine(resPath, "app.asar");
+            if (File.Exists(Path.Combine(appDir, "index.js")) && IsMoggcordPackage(Path.Combine(appDir, "package.json")) && IsStockArchive(backup)) return;
+            try
+            {
+                if (Directory.Exists(appDir)) Directory.Delete(appDir, true);
+                if (!IsStockArchive(appAsar) && IsStockArchive(backup))
+                {
+                    if (File.Exists(appAsar)) File.Delete(appAsar);
+                    File.Move(backup, appAsar);
+                }
+                InstallerLog.Write("Restored Discord's original files in " + resPath);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                InstallerLog.Write($"Could not restore {resPath}: {error.Message}");
+            }
+        }
 
-            SetProgress(90, "Closing Discord...");
-            KillDiscord(resPath);
+        private void InjectInto(string resPath)
+        {
+            var appDir = Path.Combine(resPath, "app");
+            var backup = Path.Combine(resPath, "_app.asar");
+            var appAsar = Path.Combine(resPath, "app.asar");
+            InstallerLog.Write("Adding Moggcord to " + resPath);
 
             SetProgress(91, "Removing previous mod injection (Vencord / Equicord / OpenAsar)...");
-            if (Directory.Exists(appDir))
-            {
-                try { Directory.Delete(appDir, true); } catch { }
-            }
+            if (Directory.Exists(appDir)) Directory.Delete(appDir, true);
 
             if (File.Exists(appAsar) && new FileInfo(appAsar).Length < 2_000_000)
             {
@@ -988,15 +1186,18 @@ namespace MoggcordInstaller
                 File.Move(appAsar, backup);
             }
 
-            SetProgress(94, "Creating app directory...");
+            SetProgress(94, "Writing the Moggcord loader...");
             Directory.CreateDirectory(appDir);
             WriteLoader(appDir);
+            WriteLoaderArchive(appAsar);
             CopyAssetsToDiscord(resPath);
-            InstallDefaultSettings();
-            MarkPostInstallRelaunch();
-            SetProgress(99, "Starting Discord...");
-            Thread.Sleep(1500);
-            StartDiscord(resPath);
+
+            var missing = new List<string>();
+            if (!File.Exists(Path.Combine(appDir, "index.js")) || !IsMoggcordPackage(Path.Combine(appDir, "package.json"))) missing.Add("the Moggcord loader");
+            if (!IsStockArchive(backup)) missing.Add("Discord's original app.asar");
+            if (!File.Exists(Path.Combine(_distDir, "patcher.js"))) missing.Add("the Moggcord files");
+            if (missing.Count > 0) throw new IOException("Setup could not verify " + string.Join(" and ", missing) + ".");
+            InstallerLog.Write("Moggcord is in place in " + resPath);
         }
 
         /// <summary>Removes Vencord/Equicord patches from Discord native modules.</summary>
@@ -1055,10 +1256,10 @@ namespace MoggcordInstaller
                                 }
                             }
 
-                            if (!restored)
-                            {
-                                try { File.Delete(pf); } catch { }
-                            }
+                            if (!restored && pf == patchedFiles[0] && File.Exists(Path.Combine(corePath, "core.asar")))
+                                File.WriteAllText(pf, "module.exports = require('./core.asar');");
+                            else if (!restored)
+                                InstallerLog.Write("Left a modified Discord file unchanged: " + pf);
                         }
 
                         var innerAppDir = Path.Combine(corePath, "app");
@@ -1088,14 +1289,29 @@ namespace MoggcordInstaller
 
         private void DoUninject(string resPath)
         {
+            UninjectFrom(resPath);
+            foreach (var sibling in SiblingResources(resPath).Where(path => IsMoggcordPackage(Path.Combine(path, "app", "package.json"))))
+            {
+                try
+                {
+                    UninjectFrom(sibling);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    InstallerLog.Write($"Could not remove Moggcord from {sibling}: {error.Message}");
+                    RestoreStartableDiscord(sibling);
+                }
+            }
+        }
+
+        private void UninjectFrom(string resPath)
+        {
             var appDir = Path.Combine(resPath, "app");
             var backup = Path.Combine(resPath, "_app.asar");
             var appAsar = Path.Combine(resPath, "app.asar");
+            InstallerLog.Write("Removing Moggcord from " + resPath);
 
-            SetProgress(10, "Closing Discord...");
-            KillDiscord(resPath);
-
-            SetProgress(30, "Removing injected folder...");
+            SetProgress(92, "Removing injected folder...");
             // 1. Remove the injected 'app' folder
             if (Directory.Exists(appDir))
             {
@@ -1106,7 +1322,7 @@ namespace MoggcordInstaller
                 }
             }
 
-            SetProgress(50, "Restoring original files...");
+            SetProgress(94, "Restoring original files...");
             // Nettoyage des faux app.asar avant de restaurer
             if (File.Exists(appAsar) && new FileInfo(appAsar).Length < 1000000) {
                 File.Delete(appAsar);
@@ -1123,7 +1339,7 @@ namespace MoggcordInstaller
                 }
             }
 
-            SetProgress(70, "Cleaning up assets...");
+            SetProgress(95, "Cleaning up assets...");
             // 3. Clean up Moggcord-specific assets (folders we added)
             // We DON'T delete ffmpeg.dll because it's a native Discord file!
             var appBase = Path.GetDirectoryName(resPath);
@@ -1150,45 +1366,55 @@ namespace MoggcordInstaller
             string[] dirsToClean = { "mac", "multi-instance-icons", "ghost-server" };
             foreach (var dir in dirsToClean) { 
                 var p = Path.Combine(appBase, dir); 
-                if (Directory.Exists(p)) try { Directory.Delete(p, true); } catch { } 
+                if (Directory.Exists(p)) try { Directory.Delete(p, true); } catch { }
             }
+        }
 
-            SetProgress(95, "Restarting Discord...");
-            // Relancer Discord proprement après la désinstallation
-            StartDiscord(resPath);
-            SetProgress(100, "Done!");
+        private string LoaderScript()
+        {
+            var candidates = new[] { Path.Combine(_distDir, "patcher.js"), Path.Combine(_distDir, "desktop", "patcher.js") }
+                .Select(path => "    " + JsonEscape(path.Replace("\\", "/")) + ",\n");
+            return "// Moggcord Injector\n" +
+                "\"use strict\";\n" +
+                "const fs = require(\"fs\");\n" +
+                "const path = require(\"path\");\n" +
+                "const candidates = [\n" + string.Concat(candidates) +
+                "    path.join(path.dirname(process.execPath), \"resources\", \"dist\", \"patcher.js\")\n" +
+                "];\n" +
+                "const patcher = candidates.find(file => { try { return fs.existsSync(file); } catch { return false; } });\n" +
+                "if (!patcher) throw new Error(\"[Moggcord] patcher.js not found. Open the Moggcord Installer and choose Repair.\");\n" +
+                "process.env.MOGGCORD_PATCHER_DIR = path.dirname(patcher);\n" +
+                "require(patcher);\n";
         }
 
         private void WriteLoader(string appDir)
         {
-            // CRITICAL: use a relative path from appDir to patcher.js
-            // An absolute path breaks when the user's appdata path differs (e.g. Canary after update)
-            // appDir = {resources}\app\
-            // _distDir = %LOCALAPPDATA%\Moggcord\dist\
-            // We must use the absolute path BUT with forward slashes and proper escaping for require()
-            // The path is correct at install time; it only breaks if the user moves AppData.
-            // Real fix: use path.join(__dirname, ...) relative navigation from patcher.js location.
-            //
-            // Strategy: write index.js so it resolves patcher.js relative to _distDir stored in a sibling file,
-            // OR simply use the absolute path correctly escaped. The Canary bug is NOT the path —
-            // it's that the dist folder may not exist yet when Canary loads. We add an existence check.
-            var patcher = Path.Combine(_distDir, "patcher.js").Replace("\\", "/");
             File.WriteAllText(Path.Combine(appDir, "package.json"), "{\"name\":\"moggcord\",\"main\":\"index.js\"}");
-            File.WriteAllText(Path.Combine(appDir, "index.js"),
-                $"// Moggcord Injector\n" +
-                $"\"use strict\";\n" +
-                $"const fs = require('fs');\n" +
-                $"const path = require('path');\n" +
-                $"// Primary: injected dist path\n" +
-                $"const primary = {JsonEscape(patcher)};\n" +
-                $"// Fallback: dist/ folder next to the exe (portable mode)\n" +
-                $"const exeDir = path.dirname(process.execPath);\n" +
-                $"const fallback = path.join(exeDir, 'resources', 'dist', 'patcher.js');\n" +
-                $"const fallback2 = path.join(exeDir, 'dist', 'patcher.js');\n" +
-                $"const patcherPath = fs.existsSync(primary) ? primary : fs.existsSync(fallback) ? fallback : fallback2;\n" +
-                $"if (!fs.existsSync(patcherPath)) throw new Error('[Moggcord] patcher.js not found. Expected at: ' + primary);\n" +
-                $"require(patcherPath);\n"
-            );
+            File.WriteAllText(Path.Combine(appDir, "index.js"), LoaderScript());
+        }
+
+        private void WriteLoaderArchive(string archivePath)
+        {
+            var index = Encoding.UTF8.GetBytes(LoaderScript());
+            var package = Encoding.UTF8.GetBytes("{\"name\":\"discord\",\"main\":\"index.js\"}");
+            var header = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+            {
+                files = new Dictionary<string, object>
+                {
+                    ["index.js"] = new { size = index.Length, offset = "0" },
+                    ["package.json"] = new { size = package.Length, offset = index.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+                }
+            }));
+            var aligned = (header.Length + 3) & ~3;
+            using var writer = new BinaryWriter(File.Create(archivePath));
+            writer.Write(4);
+            writer.Write(aligned + 8);
+            writer.Write(aligned + 4);
+            writer.Write(header.Length);
+            writer.Write(header);
+            writer.Write(new byte[aligned - header.Length]);
+            writer.Write(index);
+            writer.Write(package);
         }
 
         private string JsonEscape(string s)
@@ -1268,17 +1494,18 @@ namespace MoggcordInstaller
             SetProgress(95, "Copying binaries...");
             var appBase = Path.GetDirectoryName(resPath);
 
-            string[] filesToCopy = { "ffmpeg.exe", "node.exe", "yt-dlp.exe" };
-            foreach (var f in filesToCopy) {
-                var src = Path.Combine(_distDir, f);
-                if (File.Exists(src)) File.Copy(src, Path.Combine(appBase, f), true);
-            }
-
-            SetProgress(96, "Copying directories...");
-            string[] dirsToCopy = { "mac", "multi-instance-icons", "ghost-server" };
-            foreach (var dir in dirsToCopy) {
-                var src = Path.Combine(_distDir, dir);
-                if (Directory.Exists(src)) CopyDirectory(src, Path.Combine(appBase, dir));
+            foreach (var name in new[] { "ffmpeg.exe", "node.exe", "yt-dlp.exe", "mac", "multi-instance-icons", "ghost-server" })
+            {
+                var src = Path.Combine(_distDir, name);
+                try
+                {
+                    if (File.Exists(src)) File.Copy(src, Path.Combine(appBase, name), true);
+                    else if (Directory.Exists(src)) CopyDirectory(src, Path.Combine(appBase, name));
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    InstallerLog.Write($"Skipped the optional helper {name}: {error.Message}");
+                }
             }
 
             SetProgress(98, "Finishing setup...");
@@ -1333,57 +1560,145 @@ namespace MoggcordInstaller
             return path.ToString();
         }
 
+        private static readonly string[] ChannelProcessNames = DiscordExecutables.Select(Path.GetFileNameWithoutExtension)
+            .Concat(new[] { "Update", "updater_launcher", "updater_bootstrap", "node", "ffmpeg", "yt-dlp" }).ToArray();
+
+        private static string GetChannelRoot(string appDirectory)
+        {
+            var folder = Path.GetFileName(appDirectory);
+            return folder.StartsWith("app-") && Version.TryParse(folder.Substring(4), out _) ? Directory.GetParent(appDirectory).FullName : appDirectory;
+        }
+
+        private static List<(Process process, string path)> FindChannelProcesses(string channelRoot)
+        {
+            var found = new List<(Process, string)>();
+            foreach (var process in Process.GetProcesses())
+            {
+                string path = null;
+                if (ChannelProcessNames.Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        path = Path.GetFullPath(GetProcessExecutablePath(process.Id));
+                    }
+                    catch (Exception error) when (error is Win32Exception or InvalidOperationException)
+                    {
+                        Debug.WriteLine($"Skipped process {process.Id}: {error.Message}");
+                    }
+                }
+                if (path != null && path.StartsWith(channelRoot, StringComparison.OrdinalIgnoreCase)) found.Add((process, path));
+                else process.Dispose();
+            }
+            return found;
+        }
+
         private void KillDiscord(string resPath)
         {
             SetStatus("loading", "Closing Discord...");
-            var procName = GetDiscordProcessName(resPath);
-            var appDirectory = Path.GetDirectoryName(Path.GetFullPath(resPath));
-            var folder = Path.GetFileName(appDirectory);
-            var channelRoot = (folder.StartsWith("app-") && Version.TryParse(folder.Substring(4), out _)
-                ? Directory.GetParent(appDirectory).FullName : appDirectory) + Path.DirectorySeparatorChar;
-
-            foreach (var process in Process.GetProcessesByName(procName))
+            var channelRoot = GetChannelRoot(Path.GetDirectoryName(Path.GetFullPath(resPath))) + Path.DirectorySeparatorChar;
+            for (var attempt = 0; attempt < 3; attempt++)
             {
-                try
+                var running = FindChannelProcesses(channelRoot);
+                if (running.Count == 0) return;
+                foreach (var (process, path) in running)
                 {
-                    if (process.HasExited) continue;
-                    var executable = GetProcessExecutablePath(process.Id);
-                    if (!Path.GetFullPath(executable).StartsWith(channelRoot, StringComparison.OrdinalIgnoreCase)) continue;
-                    process.Kill();
-                    if (!process.WaitForExit(5000))
-                        throw new IOException("Discord did not exit within five seconds.");
+                    using (process)
+                    {
+                        try
+                        {
+                            InstallerLog.Write($"Closing {path} (process {process.Id})");
+                            process.Kill(true);
+                            process.WaitForExit(8000);
+                        }
+                        catch (Exception error) when (error is Win32Exception or InvalidOperationException or NotSupportedException)
+                        {
+                            InstallerLog.Write($"Could not close process {process.Id}: {error.Message}");
+                        }
+                    }
                 }
-                catch (Win32Exception) when (process.HasExited)
-                {
-                    continue;
-                }
-                catch (InvalidOperationException) when (process.HasExited)
-                {
-                    continue;
-                }
-                catch (Exception error)
-                {
-                    throw new IOException($"Could not close {procName} (process {process.Id}). {error.Message} Close that Discord installation and try again.", error);
-                }
-                finally
-                {
-                    process.Dispose();
-                }
+                Thread.Sleep(400);
             }
+
+            var left = FindChannelProcesses(channelRoot);
+            var blocking = left.FirstOrDefault(entry => DiscordExecutables.Contains(Path.GetFileName(entry.path), StringComparer.OrdinalIgnoreCase));
+            foreach (var (process, path) in left)
+            {
+                InstallerLog.Write($"Still running after shutdown: {path} (process {process.Id})");
+                process.Dispose();
+            }
+            if (blocking.path != null)
+                throw new IOException($"{Path.GetFileNameWithoutExtension(blocking.path)} could not be closed. If Discord runs as administrator, quit it from the tray icon and try again.");
         }
 
-        private void StartDiscord(string resPath)
+        private string StartDiscord(string resPath)
         {
-            try {
-                var appDirectory = Path.GetDirectoryName(resPath);
-                var root = Path.GetDirectoryName(appDirectory);
-                var procName = GetDiscordProcessName(resPath) + ".exe";
-                var launcher = Path.GetFileName(appDirectory).StartsWith("app-")
-                    ? new[] { Path.Combine(root, procName), Path.Combine(root, "Update.exe") }.FirstOrDefault(File.Exists)
-                    : null;
-                if (launcher != null) Process.Start(new ProcessStartInfo(launcher, $"--processStart {procName}") { WorkingDirectory = root });
-                else Process.Start(new ProcessStartInfo(Path.Combine(appDirectory, procName)) { UseShellExecute = true, WorkingDirectory = appDirectory });
-            } catch { }
+            var appDirectory = Path.GetDirectoryName(Path.GetFullPath(resPath));
+            var root = GetChannelRoot(appDirectory);
+            var procName = GetDiscordProcessName(resPath) + ".exe";
+            var attempts = new List<(string file, string arguments, string directory, int seconds)>();
+            if (root != appDirectory)
+            {
+                attempts.Add((Path.Combine(root, procName), "--processStart " + procName, root, 25));
+                attempts.Add((Path.Combine(root, "Update.exe"), "--processStart " + procName, root, 15));
+            }
+            attempts.Add((Path.Combine(appDirectory, procName), "", appDirectory, 15));
+
+            foreach (var (file, arguments, directory, seconds) in attempts)
+            {
+                if (!File.Exists(file)) continue;
+                try
+                {
+                    InstallerLog.Write($"Starting Discord: {file} {arguments}".TrimEnd());
+                    if (InstallerLog.IsElevated)
+                        Process.Start(new ProcessStartInfo("explorer.exe", "\"" + file + "\"") { UseShellExecute = true })?.Dispose();
+                    else
+                        Process.Start(new ProcessStartInfo(file, arguments) { UseShellExecute = true, WorkingDirectory = directory })?.Dispose();
+                }
+                catch (Exception error) when (error is Win32Exception or InvalidOperationException or IOException)
+                {
+                    InstallerLog.Write("Discord could not be started this way: " + error.Message);
+                    continue;
+                }
+
+                var started = WaitForDiscord(root, appDirectory, Path.GetFileNameWithoutExtension(procName), TimeSpan.FromSeconds(seconds));
+                if (started != null)
+                {
+                    InstallerLog.Write("Discord is running from " + started);
+                    return Path.Combine(started, "resources");
+                }
+                InstallerLog.Write($"Discord did not open within {seconds} seconds.");
+            }
+            return null;
+        }
+
+        private static string WaitForDiscord(string root, string appDirectory, string processName, TimeSpan timeout)
+        {
+            var until = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < until)
+            {
+                foreach (var process in Process.GetProcessesByName(processName))
+                {
+                    string folder = null;
+                    try
+                    {
+                        folder = Path.GetDirectoryName(Path.GetFullPath(GetProcessExecutablePath(process.Id)));
+                    }
+                    catch (Exception error) when (error is Win32Exception or InvalidOperationException)
+                    {
+                        Debug.WriteLine($"Skipped process {process.Id}: {error.Message}");
+                    }
+                    finally
+                    {
+                        process.Dispose();
+                    }
+                    if (folder == null) continue;
+                    if (string.Equals(folder, appDirectory, StringComparison.OrdinalIgnoreCase)) return folder;
+                    if (root != appDirectory && Path.GetFileName(folder).StartsWith("app-")
+                        && string.Equals(Path.GetDirectoryName(folder), root, StringComparison.OrdinalIgnoreCase)) return folder;
+                }
+                Thread.Sleep(300);
+            }
+            return null;
         }
 
         private string ExtractJsonValue(string json, string key, string matchPattern = null)

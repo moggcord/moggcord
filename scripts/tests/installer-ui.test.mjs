@@ -16,7 +16,7 @@ test("the high-resolution installer artwork fits the WebView2 navigation limit",
     const image = readFileSync("installer-src/moggcord-pfp.png");
     const discord = readFileSync("installer-src/discord-icon.png");
     const canary = readFileSync("installer-src/discord-canary-icon.png");
-    const font = readFileSync("installer-src/fonts/InterVariable.woff2");
+    const font = readFileSync("installer-src/fonts/GeistVariable.woff2");
     assert.equal(image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
     assert(image.readUInt32BE(16) >= 512);
     assert(image.readUInt32BE(20) >= 512);

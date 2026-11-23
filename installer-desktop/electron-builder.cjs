@@ -10,7 +10,7 @@ module.exports = {
     electronVersion: "41.0.3",
     asar: true,
     npmRebuild: false,
-    files: ["main.cjs", "preload.cjs", "index.html", "icon.png", "icon.icns", "LICENSE", "Inter.LICENSE.txt", "THIRD-PARTY.txt"],
+    files: ["main.cjs", "preload.cjs", "index.html", "icon.png", "icon.icns", "LICENSE", "Geist.LICENSE.txt", "THIRD-PARTY.txt"],
     extraResources: [{ from: "resources", to: "moggcord-installer", filter: ["**/*"] }],
     directories: { output: "../../../release/platform-installers" },
     mac: { target: [{ target: "dmg", arch: ["universal"] }], category: "public.app-category.utilities", icon: "icon.icns", identity: "-", signIgnore: ["/equilotl$"], artifactName: "Moggcord-Installer-macOS.dmg" },

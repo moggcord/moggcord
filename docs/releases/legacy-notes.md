@@ -18,7 +18,7 @@ For a custom location, use **Custom path** below the installation list. Press **
 
 Install, Repair and Uninstall close only matching Discord processes inside the selected installation directory. Protected DiscordSystemHelper processes are not shutdown targets. If Windows still refuses to close the selected Discord, the error includes the process ID and Windows error details.
 
-The version in the footer is the actual installer version, including when offline. The Inter variable font is embedded for consistent typography; its [SIL Open Font License](../../installer-src/fonts/Inter.LICENSE.txt) is included with the font and embedded in the executable.
+The version in the footer is the actual installer version, including when offline. The Geist variable font is embedded for consistent typography; its [SIL Open Font License](../../installer-src/fonts/Geist.LICENSE.txt) is included with the font and embedded in the executable.
 
 ## Development checks
 
