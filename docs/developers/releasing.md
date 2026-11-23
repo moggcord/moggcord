@@ -31,7 +31,21 @@ Pushing a `v*` tag also triggers the release workflow. Do not both dispatch and 
 
 **macOS and Linux** build on their own runner OS. They prepare the shared interface and verified desktop files with a pinned Equilotl helper, run native fixture checks, package the installer and launch its verification mode. macOS also checks the app signature and DMG. Linux emits AppImage and DEB packages.
 
-The publish job depends on all platform jobs. It merges their artifacts, creates checksums and validates the asset layout. It first publishes technical files as the prerelease `updates-v<version>` with `make_latest: false`, then publishes only the four installer packages as `v<version>` and marks that release latest. Existing inherited workflows have other purposes; the workflow named **Build & Release Moggcord** is the current installer publication path.
+The publish job depends on all platform jobs. It merges their artifacts, creates checksums and validates the asset layout. It first publishes technical files as the prerelease `updates-v<version>` with `make_latest: false`, then publishes the four installer packages and any signed checksums as `v<version>` and marks that release latest. **Build & Release Moggcord** is the installer publication workflow.
+
+## Automatic signing
+
+Enable each signing step through the repository's **Settings → Secrets and variables → Actions** once its signing credentials are ready.
+
+| Platform | Actions variables | Actions secrets |
+| --- | --- | --- |
+| Windows | `MOGGCORD_WINDOWS_SIGNING=true`, `MOGGCORD_AZURE_CLIENT_ID`, `MOGGCORD_AZURE_TENANT_ID`, `MOGGCORD_AZURE_SUBSCRIPTION_ID`, `MOGGCORD_WINDOWS_SIGNING_ENDPOINT`, `MOGGCORD_WINDOWS_SIGNING_ACCOUNT`, `MOGGCORD_WINDOWS_SIGNING_PROFILE` | Azure authenticates through GitHub OIDC. Assign the Artifact Signing Certificate Profile Signer role to the federated identity for the intended release refs. |
+| macOS | `MOGGCORD_MAC_SIGNING=true`, `MOGGCORD_MAC_CERT_THUMBPRINT`, `MOGGCORD_APPLE_NOTARY_KEY_ID`, `MOGGCORD_APPLE_NOTARY_ISSUER` | `MOGGCORD_MAC_CERTIFICATE` (base64 Developer ID Application PKCS#12), `MOGGCORD_MAC_CERTIFICATE_PASSWORD`, `MOGGCORD_APPLE_NOTARY_KEY` (App Store Connect team API key, complete `.p8` contents) |
+| Linux and release checksums | `MOGGCORD_CHECKSUM_SIGNING=true`, `MOGGCORD_GPG_FINGERPRINT` (full fingerprint) | `MOGGCORD_GPG_PRIVATE_KEY` (armored OpenPGP secret key), `MOGGCORD_GPG_PASSPHRASE` if protected |
+
+Windows verifies the timestamped Authenticode signature before checksums are generated. macOS signs the native helper and the app, then notarizes and staples the final DMG. When checksum signing is enabled, publish the OpenPGP public key and its fingerprint through an independently trusted project channel. Users can run `gpg --verify SHA256SUMS.txt.asc SHA256SUMS.txt` followed by `sha256sum --check --ignore-missing SHA256SUMS.txt` in the directory containing the installer downloads.
+
+For local Windows builds, install SignTool with the Windows SDK and set `MOGGCORD_WINDOWS_CERT_THUMBPRINT` to the code-signing certificate in the current user's personal certificate store. Both the .NET and Rust builds sign and verify their EXE before packaging it. Set `MOGGCORD_SIGNTOOL` if your SDK installed the executable to a custom path. [Windows SignTool](https://learn.microsoft.com/windows/win32/seccrypto/signtool) · [Azure Artifact Signing](https://github.com/Azure/artifact-signing-action) · [Apple notarization](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow)
 
 ## Release assets
 

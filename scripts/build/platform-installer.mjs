@@ -4,6 +4,7 @@
  */
 
 import { build } from "esbuild";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -25,9 +26,14 @@ const response = await fetch(`https://github.com/${upstream.repository}/releases
 if (!response.ok) throw new Error(`The upstream installer could not be downloaded (${response.status}).`);
 const bytes = Buffer.from(await response.arrayBuffer());
 if (createHash("sha256").update(bytes).digest("hex") !== upstream[platform].sha256) throw new Error("The upstream installer fingerprint has changed. Packaging was stopped.");
-await writeFile(join(resources, "equilotl"), bytes);
-await chmod(join(resources, "equilotl"), 0o755);
-await writeFile(join(resources, "metadata.json"), JSON.stringify({ version: pkg.version, platform, installerSha256: upstream[platform].sha256 }));
+const helper = join(resources, "equilotl");
+await writeFile(helper, bytes);
+await chmod(helper, 0o755);
+if (platform === "darwin" && process.env.MOGGCORD_MAC_SIGNING === "true") {
+    execFileSync(process.execPath, [join(root, "scripts", "build", "sign-installers.mjs"), "mac-helper", helper], { stdio: "inherit" });
+}
+const installerSha256 = createHash("sha256").update(await readFile(helper)).digest("hex");
+await writeFile(join(resources, "metadata.json"), JSON.stringify({ version: pkg.version, platform, installerSha256 }));
 await copyFile(join(root, "installer-src", "default-settings.json"), join(resources, "default-settings.json"));
 await writeFile(join(destination, "package.json"), JSON.stringify({ name: "moggcord-platform-installer", productName: "Moggcord Installer", version: pkg.version, description: "Install, repair and uninstall Moggcord in Discord Desktop.", main: "main.cjs", homepage: pkg.homepage, repository: pkg.repository, author: "Moggcord contributors", license: "GPL-3.0-or-later" }, null, 2));
 await build({ entryPoints: [join(root, "installer-desktop", "main.cjs")], outfile: join(destination, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", external: ["electron", "original-fs"],
@@ -48,9 +54,12 @@ await copyFile(join(root, "installer-src", "fonts", "Inter.LICENSE.txt"), join(d
 await writeFile(join(destination, "THIRD-PARTY.txt"), `Includes Equilotl ${upstream.version}, GPL-3.0: https://github.com/${upstream.repository}/tree/${upstream.version}\nElectron: https://github.com/electron/electron\n`);
 const font = (await readFile(join(root, "installer-src", "fonts", "InterVariable.woff2"))).toString("base64");
 const icon = "data:image/png;base64," + (await readFile(join(root, "installer-src", "moggcord-pfp.png"))).toString("base64");
+const discordIcon = (await readFile(join(root, "installer-src", "discord-icon.png"))).toString("base64");
+const canaryIcon = (await readFile(join(root, "installer-src", "discord-canary-icon.png"))).toString("base64");
 const title = platform === "darwin" ? "macOS · Intel & Apple Silicon" : "Linux x64";
 let html = (await readFile(join(root, "installer-src", "index.html"), "utf8")).replaceAll("{{FONT_BASE64}}", font).replaceAll("{{ICON_BASE64}}", icon)
-    .replace("Windows x64", title).replace("Choose a Discord folder, app folder, resources folder or Discord.exe.", platform === "darwin" ? "Choose Discord.app, Discord PTB.app or Discord Canary.app." : "Choose the Discord folder from its official DEB or tar.gz installation.")
+    .replace("{{DISCORD_BASE64}}", discordIcon).replace("{{CANARY_BASE64}}", canaryIcon)
+    .replace("Windows x64", title).replace("Choose a Discord folder or Discord.exe.", platform === "darwin" ? "Choose your Discord.app." : "Choose your Discord folder.")
     .replace('placeholder="C:\\…\\Discord"', `placeholder="${platform === "darwin" ? "/Applications/Discord.app" : "/usr/share/discord"}"`)
     .replace("</head>", '<style>.titlebar{-webkit-app-region:drag}.titlebar button,.titlebar a{-webkit-app-region:no-drag}</style></head>');
 html = html.replace("<head>", '<head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; img-src data:; font-src data:;">');

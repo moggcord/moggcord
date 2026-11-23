@@ -14,17 +14,21 @@ const flush = async () => { await new Promise(resolve => setImmediate(resolve));
 
 test("the high-resolution installer artwork fits the WebView2 navigation limit", () => {
     const image = readFileSync("installer-src/moggcord-pfp.png");
+    const discord = readFileSync("installer-src/discord-icon.png");
+    const canary = readFileSync("installer-src/discord-canary-icon.png");
     const font = readFileSync("installer-src/fonts/InterVariable.woff2");
     assert.equal(image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
     assert(image.readUInt32BE(16) >= 512);
     assert(image.readUInt32BE(20) >= 512);
     const page = html.replaceAll("{{FONT_BASE64}}", font.toString("base64"))
+        .replaceAll("{{DISCORD_BASE64}}", discord.toString("base64"))
+        .replaceAll("{{CANARY_BASE64}}", canary.toString("base64"))
         .replaceAll("{{ICON_BASE64}}", "data:image/png;base64," + image.toString("base64"));
     assert(Buffer.byteLength(page, "utf16le") < 2 * 1024 * 1024, "Embedded artwork must fit the WebView2 HTML limit.");
 });
 
 class Element {
-    constructor() { this.children = []; this.events = new Map(); this.attrs = new Map(); this.style = {}; this.dataset = {}; this.hidden = false; this.disabled = false; this.checked = false; this.value = ""; this._text = ""; }
+    constructor() { this.children = []; this.events = new Map(); this.attrs = new Map(); this.style = { setProperty(name, value) { this[name] = value; } }; this.dataset = {}; this.hidden = false; this.disabled = false; this.checked = false; this.value = ""; this._text = ""; }
     get textContent() { return this._text + this.children.map(child => child.textContent).join(""); }
     set textContent(value) { this._text = String(value); this.children = []; }
     setAttribute(name, value) { this.attrs.set(name, value); }
@@ -72,7 +76,7 @@ async function mount({ targets = [{ name: "Discord", path: "fresh" }, { name: "D
         bridge.getInstallerUpdateStatus = () => installerStatus;
     }
     const context = vm.createContext({
-        document, window: { moggcord: bridge, matchMedia: () => ({ matches: reducedMotion }) }, performance: { now: () => now },
+        document, window: { moggcord: bridge, matchMedia: () => ({ matches: reducedMotion }), addEventListener() {} }, performance: { now: () => now },
         setInterval: fn => { intervals.set(++intervalId, fn); return intervalId; }, clearInterval: id => intervals.delete(id),
         setTimeout: (fn, delay) => { timers.set(++timerId, { fn, at: now + delay }); return timerId; }, clearTimeout: id => timers.delete(id)
     });
@@ -146,6 +150,53 @@ test("Repair and Uninstall only enable for Moggcord; replacing another mod needs
     s.get("replace-other").events.get("change")();
     s.get("run-operation").click();
     assert.deepEqual(s.calls, [["install", "other", true]]);
+});
+
+test("uninstall requires a three-second hold and starts only once", async () => {
+    const s = await mount();
+    s.buttons[2].click();
+    const run = s.get("run-operation");
+    const pointer = { pointerId: 1, isPrimary: true, button: 0 };
+    run.click();
+    run.events.get("pointerdown")(pointer);
+    s.advance(1000);
+    assert.equal(s.get("hold-countdown").textContent, "2s");
+    run.events.get("pointerup")(pointer);
+    run.click();
+    s.advance(3000);
+    assert.equal(run.attrs.has("data-holding"), false);
+    assert.equal(s.calls.length, 0);
+    run.events.get("pointerdown")(pointer);
+    s.advance(2999);
+    assert.equal(s.calls.length, 0);
+    s.advance(1);
+    run.events.get("pointerup")(pointer);
+    run.click();
+    assert.deepEqual(s.calls, [["uninstall", "installed", false]]);
+});
+
+test("keyboard holds cancel on release, focus loss and navigation before uninstalling", async () => {
+    const s = await mount({ reducedMotion: true });
+    s.buttons[2].click();
+    const run = s.get("run-operation");
+    const key = { key: " ", preventDefault() {} };
+    for (const type of ["keyup", "blur"]) {
+        run.events.get("keydown")(key);
+        s.advance(1500);
+        run.events.get(type)(key);
+        s.advance(1500);
+        assert.equal(s.calls.length, 0);
+    }
+    run.events.get("keydown")(key);
+    s.get("back").click();
+    s.advance(3000);
+    assert.equal(s.calls.length, 0);
+    s.buttons[2].click();
+    run.events.get("keydown")(key);
+    s.advance(1800);
+    run.events.get("keydown")({ ...key, repeat: true });
+    s.advance(1200);
+    assert.deepEqual(s.calls, [["uninstall", "installed", false]]);
 });
 
 test("explicit operation click starts exactly once and handles progress, completion and stale updates", async () => {
@@ -234,7 +285,11 @@ test("the folder picker resolves the selected folder and cancellation preserves 
 test("success notifications cover all three completed actions and dismiss without another native operation", async () => {
     for (const [index, result, title] of [[0, "installed", "Installation complete"], [1, "repaired", "Repair complete"], [2, "uninstalled", "Uninstall complete"]]) {
         const s = await mount();
-        s.buttons[index].click(); s.get("run-operation").click();
+        s.buttons[index].click();
+        if (index === 2) {
+            s.get("run-operation").events.get("keydown")({ key: "Enter", preventDefault() {} });
+            s.advance(3000);
+        } else s.get("run-operation").click();
         s.status({ state: "done", result }); s.tick();
         const notice = s.get("progress-notice");
         assert.equal(notice.dataset.tone, "success");
@@ -268,8 +323,10 @@ test("dismissed warning and info notifications cannot bypass installation or rep
         assert.equal(s.get("replace-other").checked, false);
     }
     s.buttons[2].click();
-    assert.equal(s.get("selection-notice").dataset.tone, "warning");
+    assert.equal(s.get("selection-notice").hidden, true);
+    assert.equal(s.get("hold-hint").hidden, false);
     assert.equal(s.get("run-operation").disabled, false);
+    s.get("run-operation").click();
     assert.equal(s.calls.length, 0);
 });
 

@@ -17,6 +17,9 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
     outputs:
       version: ${{ steps.metadata.outputs.version }}
 
@@ -69,6 +72,30 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: .\scripts\build\windows-installer.ps1
+
+      - name: Log in to Azure for Windows signing
+        if: vars.MOGGCORD_WINDOWS_SIGNING == 'true'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.MOGGCORD_AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.MOGGCORD_AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.MOGGCORD_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign the Windows installer
+        if: vars.MOGGCORD_WINDOWS_SIGNING == 'true'
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+        with:
+          endpoint: ${{ vars.MOGGCORD_WINDOWS_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.MOGGCORD_WINDOWS_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.MOGGCORD_WINDOWS_SIGNING_PROFILE }}
+          files: ${{ github.workspace }}\release\installer\Moggcord-Installer.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Verify the Windows signature
+        if: vars.MOGGCORD_WINDOWS_SIGNING == 'true'
+        run: node scripts/build/sign-installers.mjs windows-verify release/installer/Moggcord-Installer.exe
 
       - name: Test installer
         run: |
@@ -156,7 +183,16 @@ jobs:
           version: 10.30.3
       - run: pnpm install --frozen-lockfile
       - run: pnpm buildStandalone
+      - name: Import macOS distribution certificate
+        if: matrix.platform == 'darwin' && vars.MOGGCORD_MAC_SIGNING == 'true'
+        uses: apple-actions/import-codesign-certs@fe74d46e82474f87e1ba79832ad28a4013d0e33a # v6.1.0
+        with:
+          p12-file-base64: ${{ secrets.MOGGCORD_MAC_CERTIFICATE }}
+          p12-password: ${{ secrets.MOGGCORD_MAC_CERTIFICATE_PASSWORD }}
       - run: pnpm build:platform-installer
+        env:
+          MOGGCORD_MAC_SIGNING: ${{ matrix.platform == 'darwin' && vars.MOGGCORD_MAC_SIGNING == 'true' }}
+          CSC_NAME: ${{ vars.MOGGCORD_MAC_CERT_THUMBPRINT }}
       - name: Test native patching and restoration
         shell: bash
         run: |
@@ -167,7 +203,16 @@ jobs:
         shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          MOGGCORD_MAC_SIGNING: ${{ matrix.platform == 'darwin' && vars.MOGGCORD_MAC_SIGNING == 'true' }}
+          CSC_NAME: ${{ vars.MOGGCORD_MAC_CERT_THUMBPRINT }}
         run: pnpm exec electron-builder --projectDir "$PWD/.codex-temp/platform-installer/${{ matrix.platform }}" --config "$PWD/installer-desktop/electron-builder.cjs" --publish never
+      - name: Notarize and staple the macOS installer
+        if: matrix.platform == 'darwin' && vars.MOGGCORD_MAC_SIGNING == 'true'
+        env:
+          MOGGCORD_APPLE_NOTARY_KEY: ${{ secrets.MOGGCORD_APPLE_NOTARY_KEY }}
+          APPLE_API_KEY_ID: ${{ vars.MOGGCORD_APPLE_NOTARY_KEY_ID }}
+          APPLE_API_ISSUER: ${{ vars.MOGGCORD_APPLE_NOTARY_ISSUER }}
+        run: node scripts/build/sign-installers.mjs mac-dmg release/platform-installers/Moggcord-Installer-macOS.dmg
       - name: Verify packaged Linux installer
         if: matrix.platform == 'linux'
         shell: bash
@@ -233,6 +278,15 @@ jobs:
           mv ../SHA256SUMS.txt .
       - name: Separate installers from technical update files
         run: node scripts/build/release-layout.mjs
+      - name: Sign the release checksums
+        if: vars.MOGGCORD_CHECKSUM_SIGNING == 'true'
+        env:
+          MOGGCORD_GPG_PRIVATE_KEY: ${{ secrets.MOGGCORD_GPG_PRIVATE_KEY }}
+          MOGGCORD_GPG_PASSPHRASE: ${{ secrets.MOGGCORD_GPG_PASSPHRASE }}
+          MOGGCORD_GPG_FINGERPRINT: ${{ vars.MOGGCORD_GPG_FINGERPRINT }}
+        run: |
+          node scripts/build/sign-installers.mjs checksums release-assets/updates/SHA256SUMS.txt
+          cp release-assets/updates/SHA256SUMS.txt{,.asc} release-assets/installers/
       - name: Publish technical update files
         uses: softprops/action-gh-release@v2
         with:

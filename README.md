@@ -1,6 +1,8 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/moggcord-avatar.png" width="72" height="72" alt="">
-  <h1>Moggcord™ Desktop</h1>
+
+# Moggcord™ Desktop
+
   <p>Customize Discord with plugins, themes and QuickCSS on Windows, macOS and Linux.</p>
   <p>
     <a href="https://github.com/moggcord/moggcord/releases/latest"><strong>Download</strong></a> ·
@@ -15,12 +17,12 @@
 
 | Platform | Package | Download size | Guide |
 | --- | --- | ---: | --- |
-| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/windows.svg" width="20" height="20" alt=""> **Windows x64** | [EXE](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer.exe) | 117.8 MiB | [Setup](docs/getting-started/windows.md) |
-| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/apple.svg" width="20" height="20" alt=""> **macOS · Intel / Apple Silicon** | [DMG](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-macOS.dmg) | 230.0 MiB | [Setup](docs/getting-started/macos.md) |
-| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [AppImage](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-Linux.AppImage) | 141.0 MiB | [Setup](docs/getting-started/linux.md) |
-| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [DEB](https://github.com/moggcord/moggcord/releases/download/v1.18.63/Moggcord-Installer-Linux.deb) | 108.1 MiB | [Setup](docs/getting-started/linux.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/windows.svg" width="20" height="20" alt=""> **Windows x64** | [EXE](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer.exe) | ~118 MiB | [Setup](docs/getting-started/windows.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/apple.svg" width="20" height="20" alt=""> **macOS · Intel / Apple Silicon** | [DMG](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-macOS.dmg) | ~230 MiB | [Setup](docs/getting-started/macos.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [AppImage](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-Linux.AppImage) | ~141 MiB | [Setup](docs/getting-started/linux.md) |
+| <img src="https://raw.githubusercontent.com/moggcord/.github/main/profile/assets/linux.svg" width="20" height="20" alt=""> **Linux x64** | [DEB](https://github.com/moggcord/moggcord/releases/latest/download/Moggcord-Installer-Linux.deb) | ~108 MiB | [Setup](docs/getting-started/linux.md) |
 
-macOS and Linux installers are previews. Download sizes refer to the linked packages. Installed storage varies with the Discord installation.
+macOS and Linux installers are previews. Download sizes are approximate. Installed storage varies with the Discord installation.
 
 1. Install Discord and download the matching Moggcord installer.
 2. Open the installer, select the Discord channel you use (**Stable**, **PTB**, or **Canary**) and choose **Install Moggcord**.
@@ -50,5 +52,7 @@ For an existing installation, the installer also offers **Repair Moggcord** and 
 ## Support Moggcord
 
 [**Sponsor Moggcord on GitHub**](https://github.com/sponsors/caedesdev). Contributions support ongoing plugin, theme and installer development. You can also help by reporting bugs or improving the documentation.
+
+## License and privacy
 
 Moggcord is an independent project for Discord. It builds on [Equicord](https://github.com/Equicord/Equicord) and [Vencord](https://github.com/Vendicated/Vencord) under [GPL-3.0-or-later](LICENSE). Upstream copyright notices and third-party licenses apply to their respective work. [Trust and privacy](docs/guides/trust-and-privacy.md) · [Privacy policy](docs/legal/privacy-policy.md)

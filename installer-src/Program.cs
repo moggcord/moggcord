@@ -328,12 +328,17 @@ namespace MoggcordInstaller
                 }
 
                 // Convert Icon to Base64 PNG for HTML
-                using (var image = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoggcordInstaller.moggcord-pfp.png"))
-                using (var bytes = new MemoryStream())
+                foreach (var (file, placeholder, prefix) in new[] {
+                    ("moggcord-pfp.png", "{{ICON_BASE64}}", "data:image/png;base64,"),
+                    ("discord-icon.png", "{{DISCORD_BASE64}}", ""),
+                    ("discord-canary-icon.png", "{{CANARY_BASE64}}", "")
+                })
                 {
+                    using var image = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoggcordInstaller." + file);
                     if (image == null) throw new InvalidDataException("The installer logo is missing.");
+                    using var bytes = new MemoryStream();
                     image.CopyTo(bytes);
-                    html = html.Replace("{{ICON_BASE64}}", "data:image/png;base64," + Convert.ToBase64String(bytes.ToArray()));
+                    html = html.Replace(placeholder, prefix + Convert.ToBase64String(bytes.ToArray()));
                 }
 
                 _webView.NavigateToString(html);
