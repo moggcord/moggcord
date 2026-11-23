@@ -4,6 +4,7 @@
 
 | Version | Main changes | Notes |
 | --- | --- | --- |
+| [1.18.65](1.18.65.md) | Restart Discord through its new launcher after installing | [Release](https://github.com/moggcord/moggcord/releases/tag/v1.18.65) |
 | [1.18.64](1.18.64.md) | Refine the installer and require a three-second hold for uninstallation | [Release](https://github.com/moggcord/moggcord/releases/tag/v1.18.64) |
 | [1.18.63](1.18.63.md) | Harden ImageZoom image context menus against unexpected Discord arguments | [Release](https://github.com/caedesdev/moggcord/releases/tag/v1.18.63) |
 | [1.18.62](1.18.62.md) | Restore theme loading, update Theme Management and fix image right-clicks | [Release](https://github.com/caedesdev/moggcord/releases/tag/v1.18.62) |
